@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#C2185B">
 <title>Miss Berry — Teler Portaal (mockup)</title>
-<!-- v1.5 CI loop test -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- v2.0 i18n + PWA -->
 <style>
   :root{
     --berry:#C2185B; --berry-dark:#8E0E3D; --berry-light:#FCE4EC;
@@ -19,6 +24,7 @@
   header .logo{font-weight:800; font-size:17px; letter-spacing:.3px;}
   header .sub{font-size:11px; opacity:.85;}
   #timer{margin-left:auto; background:rgba(255,255,255,.18); padding:4px 10px; border-radius:12px; font-size:13px; font-variant-numeric:tabular-nums;}
+  #langBtn{background:rgba(255,255,255,.18); border:none; color:#fff; padding:4px 10px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer;}
   .screen{flex:1; overflow-y:auto; padding:18px; display:none; flex-direction:column;}
   .screen.active{display:flex;}
   h2{font-size:20px; margin-bottom:4px; color:var(--ink);}
@@ -83,48 +89,49 @@
   <header>
     <div>
       <div class="logo">🍓 Miss Berry</div>
-      <div class="sub">Teler: Kwekerij De Vries</div>
+      <div class="sub" data-i18n="sub"></div>
     </div>
     <div id="timer">0:00</div>
+    <button id="langBtn" onclick="toggleLang()">EN</button>
   </header>
 
   <!-- HOME -->
   <div class="screen active" id="s-home">
-    <h2>Goedemorgen 👋</h2>
-    <p class="hint">Wat wilt u doen?</p>
+    <h2 data-i18n="homeTitle"></h2>
+    <p class="hint" data-i18n="homeHint"></p>
     <div class="home-card" onclick="startFlow()">
-      <h3>📦 Nieuwe aanmelding</h3>
-      <p>Volume aanmelden voor de volgende ophaaldag</p>
+      <h3>📦 <span data-i18n="homeNew"></span></h3>
+      <p data-i18n="homeNewP"></p>
     </div>
-    <div class="home-card" onclick="alert('Gereedmelding: bevestig dat drums zijn gevuld (≤24 u voor transport), labels compleet en pallets klaarstaan. — Volgt in dit mockup-traject.')">
-      <h3>✅ Gereedmelden <span class="badge">1 open</span></h3>
-      <p>Bevestig dat uw pallets klaarstaan voor transport</p>
+    <div class="home-card" onclick="alert(t('alertReady'))">
+      <h3>✅ <span data-i18n="homeReady"></span> <span class="badge" data-i18n="badgeOpen"></span></h3>
+      <p data-i18n="homeReadyP"></p>
     </div>
-    <div class="home-card" onclick="alert('Overzicht van eerdere aanmeldingen, gewichten en emballage-saldo. — Volgt in dit mockup-traject.')">
-      <h3>📋 Mijn aanmeldingen</h3>
-      <p>Historie, gewichten &amp; emballage</p>
+    <div class="home-card" onclick="alert(t('alertHistory'))">
+      <h3>📋 <span data-i18n="homeHist"></span></h3>
+      <p data-i18n="homeHistP"></p>
     </div>
-    <p class="note">Mockup — de timer start zodra u een aanmelding begint.</p>
+    <p class="note" data-i18n="homeNote"></p>
   </div>
 
   <!-- STEP 1: PRODUCT -->
   <div class="screen" id="s-product">
     <div class="steps"><i class="done"></i><i></i><i></i><i></i><i></i></div>
-    <h2>Welk product?</h2>
-    <p class="hint">Kies één product per aanmelding</p>
-    <div class="card" onclick="pick('product','Aardbeien',this)"><span class="em">🍓</span> Aardbeien</div>
-    <div class="card" onclick="pick('product','Blauwe bessen',this)"><span class="em">🫐</span> Blauwe bessen</div>
-    <div class="card" onclick="pick('product','Frambozen',this)"><span class="em">🍇</span> Frambozen</div>
-    <div class="card" onclick="pick('product','Bramen',this)"><span class="em">🖤</span> Bramen</div>
+    <h2 data-i18n="prodTitle"></h2>
+    <p class="hint" data-i18n="prodHint"></p>
+    <div class="card" onclick="pick('product','strawberries',this)"><span class="em">🍓</span> <span data-i18n="strawberries"></span></div>
+    <div class="card" onclick="pick('product','blueberries',this)"><span class="em">🫐</span> <span data-i18n="blueberries"></span></div>
+    <div class="card" onclick="pick('product','raspberries',this)"><span class="em">🍇</span> <span data-i18n="raspberries"></span></div>
+    <div class="card" onclick="pick('product','blackberries',this)"><span class="em">🖤</span> <span data-i18n="blackberries"></span></div>
   </div>
 
   <!-- STEP 2: VOLUME + DAY -->
   <div class="screen" id="s-volume">
     <div class="steps"><i class="done"></i><i class="done"></i><i></i><i></i><i></i></div>
-    <h2>Hoeveelheid &amp; ophaaldag</h2>
-    <p class="hint">1 pallet = 4 drums (220 L)</p>
+    <h2 data-i18n="volTitle"></h2>
+    <p class="hint" data-i18n="volHint"></p>
     <div class="steprow">
-      <label>Pallets<small>4 drums per pallet</small></label>
+      <label><span data-i18n="pallets"></span><small data-i18n="palletsSmall"></small></label>
       <div class="ctrls">
         <button onclick="step('pallets',-1)">−</button>
         <div class="val" id="v-pallets">1</div>
@@ -132,81 +139,161 @@
       </div>
     </div>
     <div class="steprow">
-      <label>Losse drums<small>optioneel</small></label>
+      <label><span data-i18n="drums"></span><small data-i18n="drumsSmall"></small></label>
       <div class="ctrls">
         <button onclick="step('drums',-1)">−</button>
         <div class="val" id="v-drums">0</div>
         <button onclick="step('drums',1)">+</button>
       </div>
     </div>
-    <p class="hint" style="margin-top:6px">Ophaaldag</p>
+    <p class="hint" style="margin-top:6px" data-i18n="pickupDay"></p>
     <div class="chips" id="days"></div>
-    <button class="btn" id="b-volume" disabled onclick="go('s-photo')">Verder</button>
-    <button class="btn ghost" onclick="go('s-product')">← Terug</button>
+    <button class="btn" id="b-volume" disabled onclick="go('s-photo')" data-i18n="next"></button>
+    <button class="btn ghost" onclick="go('s-product')" data-i18n="back"></button>
   </div>
 
   <!-- STEP 3: PHOTO -->
   <div class="screen" id="s-photo">
     <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i></i><i></i></div>
-    <h2>Foto gesorteerd fruit</h2>
-    <p class="hint">Fruit nog in 5 kg-kratten, vóór het storten in drums</p>
-    <div class="rule">📸 Geen foto = procedure niet gevolgd. De foto is uw kwaliteitsbewijs.</div>
+    <h2 data-i18n="photoTitle"></h2>
+    <p class="hint" data-i18n="photoHint"></p>
+    <div class="rule" data-i18n="photoRule"></div>
     <div class="photobox" id="photobox" onclick="document.getElementById('file').click()">
       <div class="em">📷</div>
-      <p>Tik om een foto te maken</p>
+      <p data-i18n="photoTap"></p>
     </div>
     <input type="file" id="file" accept="image/*" capture="environment" hidden onchange="photoTaken(event)">
-    <button class="btn" id="b-photo" disabled onclick="go('s-checks')">Verder</button>
-    <button class="btn ghost" onclick="go('s-volume')">← Terug</button>
+    <button class="btn" id="b-photo" disabled onclick="go('s-checks')" data-i18n="next"></button>
+    <button class="btn ghost" onclick="go('s-volume')" data-i18n="back"></button>
   </div>
 
   <!-- STEP 4: QUALITY CHECKS -->
   <div class="screen" id="s-checks">
     <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i></i></div>
-    <h2>Kwaliteitscheck</h2>
-    <p class="hint">Bevestig de volgende punten</p>
+    <h2 data-i18n="checkTitle"></h2>
+    <p class="hint" data-i18n="checkHint"></p>
     <div class="check" onclick="toggleCheck(this,0)">
       <div class="box">✓</div>
-      <div>Minimaal 12 uur gekoeld op ≤ 5 °C<small>Koeling is de meest voorkomende afwijking — belangrijk!</small></div>
+      <div><span data-i18n="check1"></span><small data-i18n="check1s"></small></div>
     </div>
     <div class="check" onclick="toggleCheck(this,1)">
       <div class="box">✓</div>
-      <div>Geen alcohol- of schimmelgeur<small>Visuele en geurcontrole uitgevoerd</small></div>
+      <div><span data-i18n="check2"></span><small data-i18n="check2s"></small></div>
     </div>
     <div class="check" onclick="toggleCheck(this,2)">
       <div class="box">✓</div>
-      <div>Oogstdatum: <b id="harvestLabel">vandaag</b><small>Tik om te wijzigen (gisteren/vandaag)</small></div>
+      <div><span data-i18n="check3"></span> <b id="harvestLabel"></b><small data-i18n="check3s"></small></div>
     </div>
-    <button class="btn" id="b-checks" disabled onclick="buildSummary()">Verder</button>
-    <button class="btn ghost" onclick="go('s-photo')">← Terug</button>
+    <button class="btn" id="b-checks" disabled onclick="buildSummary()" data-i18n="next"></button>
+    <button class="btn ghost" onclick="go('s-photo')" data-i18n="back"></button>
   </div>
 
   <!-- STEP 5: REVIEW -->
   <div class="screen" id="s-review">
     <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></div>
-    <h2>Controleren &amp; versturen</h2>
-    <p class="hint">Klopt alles?</p>
+    <h2 data-i18n="revTitle"></h2>
+    <p class="hint" data-i18n="revHint"></p>
     <div class="summary" id="summary"></div>
-    <button class="btn green" onclick="submitFlow()">✓ Aanmelding versturen</button>
-    <button class="btn ghost" onclick="go('s-checks')">← Terug</button>
+    <button class="btn green" onclick="submitFlow()" data-i18n="submit"></button>
+    <button class="btn ghost" onclick="go('s-checks')" data-i18n="back"></button>
   </div>
 
   <!-- DONE -->
   <div class="screen" id="s-done">
     <div class="done-icon">✓</div>
     <div class="center">
-      <h2>Aangemeld!</h2>
-      <p class="hint">Miss Berry en de vervoerder zijn automatisch geïnformeerd.</p>
+      <h2 data-i18n="doneTitle"></h2>
+      <p class="hint" data-i18n="doneP"></p>
       <div class="bigtime" id="finalTime">–</div>
-      <p class="hint">totale invultijd (doel: &lt; 2:00)</p>
-      <div class="ref">Referentie<br><b id="refnr">MB-2026-0000</b></div>
+      <p class="hint" data-i18n="doneTime"></p>
+      <div class="ref"><span data-i18n="reference"></span><br><b id="refnr">MB-2026-0000</b></div>
     </div>
-    <button class="btn" onclick="resetFlow()">Nieuwe aanmelding</button>
+    <button class="btn" onclick="resetFlow()" data-i18n="newAnn"></button>
   </div>
 </div>
 
 <script>
-const state={product:null,pallets:1,drums:0,day:null,photo:false,checks:[false,false,true],harvest:'vandaag'};
+/* ---------- i18n ---------- */
+const T={
+  nl:{
+    sub:'Teler: Kwekerij De Vries',
+    homeTitle:'Goedemorgen 👋',homeHint:'Wat wilt u doen?',
+    homeNew:'Nieuwe aanmelding',homeNewP:'Volume aanmelden voor de volgende ophaaldag',
+    homeReady:'Gereedmelden',badgeOpen:'1 open',homeReadyP:'Bevestig dat uw pallets klaarstaan voor transport',
+    homeHist:'Mijn aanmeldingen',homeHistP:'Historie, gewichten & emballage',
+    homeNote:'Mockup — de timer start zodra u een aanmelding begint.',
+    prodTitle:'Welk product?',prodHint:'Kies één product per aanmelding',
+    strawberries:'Aardbeien',blueberries:'Blauwe bessen',raspberries:'Frambozen',blackberries:'Bramen',
+    volTitle:'Hoeveelheid & ophaaldag',volHint:'1 pallet = 4 drums (220 L)',
+    pallets:'Pallets',palletsSmall:'4 drums per pallet',drums:'Losse drums',drumsSmall:'optioneel',
+    pickupDay:'Ophaaldag',next:'Verder',back:'← Terug',
+    photoTitle:'Foto gesorteerd fruit',photoHint:'Fruit nog in 5 kg-kratten, vóór het storten in drums',
+    photoRule:'📸 Geen foto = procedure niet gevolgd. De foto is uw kwaliteitsbewijs.',
+    photoTap:'Tik om een foto te maken',
+    checkTitle:'Kwaliteitscheck',checkHint:'Bevestig de volgende punten',
+    check1:'Minimaal 12 uur gekoeld op ≤ 5 °C',check1s:'Koeling is de meest voorkomende afwijking — belangrijk!',
+    check2:'Geen alcohol- of schimmelgeur',check2s:'Visuele en geurcontrole uitgevoerd',
+    check3:'Oogstdatum:',check3s:'Tik om te wijzigen (gisteren/vandaag)',
+    revTitle:'Controleren & versturen',revHint:'Klopt alles?',submit:'✓ Aanmelding versturen',
+    doneTitle:'Aangemeld!',doneP:'Miss Berry en de vervoerder zijn automatisch geïnformeerd.',
+    doneTime:'totale invultijd (doel: < 2:00)',reference:'Referentie',newAnn:'Nieuwe aanmelding',
+    today:'vandaag',yesterday:'gisteren',
+    sumProduct:'Product',sumVolume:'Volume',sumNet:'Indicatief netto',sumDay:'Ophaaldag',
+    sumHarvest:'Oogstdatum',sumPhoto:'Foto kratten',sumPhotoV:'✅ toegevoegd',
+    sumCool:'Koeling ≥12 u ≤5 °C',sumCoolV:'✅ bevestigd',
+    volFmt:(p,d,tot)=>p+' pallet(s) + '+d+' drum(s) = '+tot+' drums',
+    alertReady:'Gereedmelding: bevestig dat drums zijn gevuld (≤24 u voor transport), labels compleet en pallets klaarstaan. — Volgt in dit mockup-traject.',
+    alertHistory:'Overzicht van eerdere aanmeldingen, gewichten en emballage-saldo. — Volgt in dit mockup-traject.',
+    dayNames:['zo','ma','di','wo','do','vr','za'],
+    title:'Miss Berry — Teler Portaal (mockup)',locale:'nl-NL'
+  },
+  en:{
+    sub:'Grower: Kwekerij De Vries',
+    homeTitle:'Good morning 👋',homeHint:'What would you like to do?',
+    homeNew:'New announcement',homeNewP:'Announce volume for the next pickup day',
+    homeReady:'Ready confirmation',badgeOpen:'1 open',homeReadyP:'Confirm your pallets are ready for transport',
+    homeHist:'My announcements',homeHistP:'History, weights & packaging',
+    homeNote:'Mockup — the timer starts as soon as you begin an announcement.',
+    prodTitle:'Which product?',prodHint:'Choose one product per announcement',
+    strawberries:'Strawberries',blueberries:'Blueberries',raspberries:'Raspberries',blackberries:'Blackberries',
+    volTitle:'Quantity & pickup day',volHint:'1 pallet = 4 drums (220 L)',
+    pallets:'Pallets',palletsSmall:'4 drums per pallet',drums:'Loose drums',drumsSmall:'optional',
+    pickupDay:'Pickup day',next:'Continue',back:'← Back',
+    photoTitle:'Photo of sorted fruit',photoHint:'Fruit still in 5 kg crates, before tipping into drums',
+    photoRule:'📸 No photo = procedure not followed. The photo is your quality evidence.',
+    photoTap:'Tap to take a photo',
+    checkTitle:'Quality check',checkHint:'Confirm the following points',
+    check1:'Cooled at ≤ 5 °C for at least 12 hours',check1s:'Cooling is the most common deviation — important!',
+    check2:'No alcohol or mould smell',check2s:'Visual and smell check performed',
+    check3:'Harvest date:',check3s:'Tap to change (yesterday/today)',
+    revTitle:'Review & submit',revHint:'Is everything correct?',submit:'✓ Submit announcement',
+    doneTitle:'Submitted!',doneP:'Miss Berry and the carrier have been informed automatically.',
+    doneTime:'total completion time (target: < 2:00)',reference:'Reference',newAnn:'New announcement',
+    today:'today',yesterday:'yesterday',
+    sumProduct:'Product',sumVolume:'Volume',sumNet:'Indicative net',sumDay:'Pickup day',
+    sumHarvest:'Harvest date',sumPhoto:'Crate photo',sumPhotoV:'✅ added',
+    sumCool:'Cooling ≥12 h ≤5 °C',sumCoolV:'✅ confirmed',
+    volFmt:(p,d,tot)=>p+' pallet(s) + '+d+' drum(s) = '+tot+' drums',
+    alertReady:'Ready confirmation: confirm drums are filled (≤24 h before transport), labels complete and pallets ready. — Coming later in this mockup.',
+    alertHistory:'Overview of previous announcements, weights and packaging balance. — Coming later in this mockup.',
+    dayNames:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    title:'Miss Berry — Grower Portal (mockup)',locale:'en-GB'
+  }
+};
+let L=localStorage.getItem('mb-lang')||'nl';
+function t(k){return T[L][k];}
+function toggleLang(){L=L==='nl'?'en':'nl';localStorage.setItem('mb-lang',L);applyLang();}
+function applyLang(){
+  document.documentElement.lang=L;
+  document.title=t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});
+  document.getElementById('langBtn').textContent=L==='nl'?'EN':'NL';
+  document.getElementById('harvestLabel').textContent=t(state.harvest);
+  renderDays();
+}
+
+/* ---------- state & flow ---------- */
+const state={product:null,pallets:1,drums:0,day:null,photo:false,checks:[false,false,true],harvest:'today'};
 let t0=null,tInt=null;
 
 function fmt(s){const m=Math.floor(s/60),ss=String(s%60).padStart(2,'0');return m+':'+ss;}
@@ -232,18 +319,18 @@ function step(key,d){
 
 function dayName(offset){
   const d=new Date();d.setDate(d.getDate()+offset);
-  const names=['zo','ma','di','wo','do','vr','za'];
-  return names[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1);
+  return t('dayNames')[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1);
 }
-// vaste ophaaldagen: toon eerstvolgende 3 opties
-(function(){
+// fixed pickup days: show next 3 options
+function renderDays(){
   const wrap=document.getElementById('days');
+  wrap.innerHTML='';
   [1,2,3].forEach(off=>{
-    const c=document.createElement('div');c.className='chip';c.textContent=dayName(off);
-    c.onclick=()=>{state.day=c.textContent;wrap.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');validateVolume();};
+    const c=document.createElement('div');c.className='chip'+(state.day===off?' sel':'');c.textContent=dayName(off);
+    c.onclick=()=>{state.day=off;wrap.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');validateVolume();};
     wrap.appendChild(c);
   });
-})();
+}
 function validateVolume(){
   document.getElementById('b-volume').disabled=!(state.day&&(state.pallets>0||state.drums>0));
 }
@@ -252,14 +339,14 @@ function photoTaken(e){
   if(!e.target.files.length)return;
   state.photo=true;
   const url=URL.createObjectURL(e.target.files[0]);
-  document.getElementById('photobox').innerHTML='<img src="'+url+'" alt="foto">';
+  document.getElementById('photobox').innerHTML='<img src="'+url+'" alt="photo">';
   document.getElementById('b-photo').disabled=false;
 }
 
 function toggleCheck(el,i){
   if(i===2){ // harvest date toggle
-    state.harvest=state.harvest==='vandaag'?'gisteren':'vandaag';
-    document.getElementById('harvestLabel').textContent=state.harvest;
+    state.harvest=state.harvest==='today'?'yesterday':'today';
+    document.getElementById('harvestLabel').textContent=t(state.harvest);
     el.classList.add('sel');state.checks[2]=true;
   }else{
     state.checks[i]=!state.checks[i];
@@ -270,15 +357,15 @@ function toggleCheck(el,i){
 
 function buildSummary(){
   const totDrums=state.pallets*4+state.drums;
-  const kg=totDrums*210; // indicatief netto per drum
+  const kg=totDrums*210; // indicative net per drum
   document.getElementById('summary').innerHTML=
-    row('Product',state.product)+
-    row('Volume',state.pallets+' pallet(s) + '+state.drums+' drum(s) = '+totDrums+' drums')+
-    row('Indicatief netto','± '+kg.toLocaleString('nl-NL')+' kg')+
-    row('Ophaaldag',state.day)+
-    row('Oogstdatum',state.harvest)+
-    row('Foto kratten','✅ toegevoegd')+
-    row('Koeling ≥12 u ≤5 °C','✅ bevestigd');
+    row(t('sumProduct'),t(state.product))+
+    row(t('sumVolume'),T[L].volFmt(state.pallets,state.drums,totDrums))+
+    row(t('sumNet'),'± '+kg.toLocaleString(t('locale'))+' kg')+
+    row(t('sumDay'),dayName(state.day))+
+    row(t('sumHarvest'),t(state.harvest))+
+    row(t('sumPhoto'),t('sumPhotoV'))+
+    row(t('sumCool'),t('sumCoolV'));
   go('s-review');
 }
 function row(k,v){return '<div class="sumrow"><span>'+k+'</span><b>'+v+'</b></div>';}
@@ -292,6 +379,13 @@ function submitFlow(){
 }
 
 function resetFlow(){location.reload();}
+
+applyLang();
+
+/* ---------- PWA ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+}
 </script>
 </body>
 </html>
