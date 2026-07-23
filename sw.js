@@ -1,4 +1,4 @@
-const CACHE = 'mb-mockup-v2.0';
+const CACHE = 'mb-mockup-v3.0';
 const ASSETS = ['.', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-180.png'];
 
 self.addEventListener('install', e => {
