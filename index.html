@@ -287,6 +287,13 @@
     <div class="embgrid" id="embGrid"></div>
     <div class="rule" data-i18n="embRule"></div>
     <button class="btn inline" id="embReqBtn" onclick="requestEmb()" data-i18n="embRequest"></button>
+    <div class="sechead" data-i18n="pkHead"></div>
+    <p class="hint" data-i18n="pkHint"></p>
+    <div class="check" id="pk-pkDirty" onclick="pkPick('pkDirty')"><div class="box">✓</div><div><span data-i18n="pkDirty"></span></div></div>
+    <div class="check" id="pk-pkBroken" onclick="pkPick('pkBroken')"><div class="box">✓</div><div><span data-i18n="pkBroken"></span></div></div>
+    <div class="check" id="pk-pkShort" onclick="pkPick('pkShort')"><div class="box">✓</div><div><span data-i18n="pkShort"></span></div></div>
+    <div id="pkDetail"></div>
+    <button class="btn inline" id="pkBtn" disabled onclick="pkSubmit()" data-i18n="pkSend"></button>
     <button class="btn ghost" onclick="go('s-home')" data-i18n="back"></button>
   </div>
 
@@ -356,6 +363,13 @@ nl:{
   embDrums:'Drums 220 L',embLids:'Deksels',embLiners:'Liners',embPallets:'Blokpallets',
   embRule:'Tekorten? Vraag bijlevering aan — de klant levert op instructie van Miss Berry.',
   embRequest:'📦 Bijlevering aanvragen',embReqToast:'Aanvraag verstuurd — Miss Berry regelt bijlevering bij de klant',
+  pkHead:'Probleem met geleverde emballage?',pkHint:'Melding gaat direct naar Miss Berry logistiek — geen e-mail nodig',
+  pkDirty:'🏷️ Vuil of oude etiketten',pkDirtyHint:'Maak een foto van de gebreken en verstuur de melding',
+  pkBroken:'💥 Kapotte emballage',pkBrokenHint:'Tel de kapotte stuks en geef het aantal door',
+  pkShort:'🔢 Te veel of te weinig ontvangen',pkShortHint:'Geef het werkelijk ontvangen aantal door',
+  pkCount:'Aantal',pkPhotoBtn:'Foto van gebrek maken',pkPhotoDone:'Foto toegevoegd — tik voor extra foto',
+  pkSend:'Melding versturen',pkToast:'Melding verstuurd naar Miss Berry logistiek',
+  exPack:'Emballage-melding',pkPieces:'stuks',
   rolePick:'Bekijk het platform als…',
   roleGrower:'Teler',roleGrowerS:'Kwekerij De Vries — aanmelden, gereedmelden, emballage',
   roleDispatch:'Miss Berry dispatch',roleDispatchS:'Manon — laadbord, uitzonderingen, Business Central',
@@ -424,6 +438,13 @@ en:{
   embDrums:'Drums 220 L',embLids:'Lids',embLiners:'Liners',embPallets:'Block pallets',
   embRule:'Running short? Request replenishment — the customer supplies on Miss Berry\'s instruction.',
   embRequest:'📦 Request replenishment',embReqToast:'Request sent — Miss Berry arranges replenishment with the customer',
+  pkHead:'Problem with delivered packaging?',pkHint:'Report goes straight to Miss Berry logistics — no e-mail needed',
+  pkDirty:'🏷️ Dirty or old labels',pkDirtyHint:'Take a photo of the defects and send the report',
+  pkBroken:'💥 Broken packaging',pkBrokenHint:'Count the broken pieces and report the number',
+  pkShort:'🔢 Received too much or too little',pkShortHint:'Report the amount actually received',
+  pkCount:'Amount',pkPhotoBtn:'Take photo of defect',pkPhotoDone:'Photo added — tap for another',
+  pkSend:'Send report',pkToast:'Report sent to Miss Berry logistics',
+  exPack:'Packaging report',pkPieces:'pcs',
   rolePick:'View the platform as…',
   roleGrower:'Grower',roleGrowerS:'Kwekerij De Vries — announce, confirm ready, packaging',
   roleDispatch:'Miss Berry dispatch',roleDispatchS:'Manon — loading board, exceptions, Business Central',
@@ -589,8 +610,34 @@ function renderEmb(){
     '<div class="embitem"><b>'+p.liners+'</b><span>🛍️ '+t('embLiners')+'</span></div>'+
     '<div class="embitem"><b>'+p.pallets+'</b><span>🟫 '+t('embPallets')+'</span></div>';
   const b=document.getElementById('embReqBtn');
-  b.disabled=S.embRequested;b.textContent=S.embRequested?'✓ '+t('embReqToast'):t('embRequest');}
+  b.disabled=S.embRequested;b.textContent=S.embRequested?'✓ '+t('embReqToast'):t('embRequest');
+  renderPkDetail();}
 function requestEmb(){S.embRequested=true;saveS();renderEmb();toast(t('embReqToast'));}
+
+/* packaging deviation reporting (instruction 3.6 — replaces e-mail to logistics@) */
+let pkSel=null,pkN=1,pkPhoto=false;
+function pkPick(k){pkSel=(pkSel===k?null:k);pkN=1;pkPhoto=false;renderPkDetail();}
+function renderPkDetail(){
+  ['pkDirty','pkBroken','pkShort'].forEach(k=>{const el=document.getElementById('pk-'+k);if(el)el.classList.toggle('sel',pkSel===k);});
+  const d=document.getElementById('pkDetail'),b=document.getElementById('pkBtn');
+  if(!d||!b)return;
+  if(!pkSel){d.innerHTML='';b.disabled=true;return;}
+  if(pkSel==='pkDirty'){
+    d.innerHTML='<p class="hint" style="margin-top:8px">'+t('pkDirtyHint')+'</p>'+
+      '<div class="photobox" style="padding:18px" onclick="pkTakePhoto()">'+
+      (pkPhoto?'<div class="em">✅</div><p>'+t('pkPhotoDone')+'</p>':'<div class="em">📷</div><p>'+t('pkPhotoBtn')+'</p>')+'</div>';
+    b.disabled=!pkPhoto;
+  }else{
+    d.innerHTML='<p class="hint" style="margin-top:8px">'+t(pkSel+'Hint')+'</p>'+
+      '<div class="steprow"><label><span>'+t('pkCount')+'</span></label>'+
+      '<div class="ctrls"><button onclick="pkAdj(-1)">−</button><div class="val">'+pkN+'</div><button onclick="pkAdj(1)">+</button></div></div>';
+    b.disabled=false;
+  }}
+function pkTakePhoto(){pkPhoto=true;renderPkDetail();}
+function pkAdj(d){pkN=Math.max(0,pkN+d);renderPkDetail();}
+function pkSubmit(){
+  S.exc.push({grower:'Kwekerij De Vries',dev:pkSel,kind:'pack',n:pkSel==='pkDirty'?null:pkN});
+  saveS();pkSel=null;pkPhoto=false;renderPkDetail();renderAll();toast(t('pkToast'));}
 
 /* ================= dispatch (D1/D2/D3/D8) ================= */
 const CARRIERS=[{name:'Van Dijk Transport',region:'NL'},{name:'Breux Logistics',region:'BE/DE'}];
@@ -598,7 +645,7 @@ function excList(){
   const out=[];
   S.ann.forEach(a=>{if(!a.photo)out.push({t:t('exNoPhoto'),s:a.grower+' · '+t(a.product)+' · '+dayName(a.day),k:'photo'});});
   S.ann.forEach(a=>{if(a.status==='announced'&&a.day===1&&!a.mine)out.push({t:t('exNoReady'),s:a.grower+' · '+volTxt(a),k:'ready'});});
-  S.exc.forEach(e=>out.push({t:t('exDev'),s:e.grower+' · '+t(e.dev),k:'dev'}));
+  S.exc.forEach(e=>out.push({t:t(e.kind==='pack'?'exPack':'exDev'),s:e.grower+' · '+t(e.dev)+(e.n!=null?' · '+e.n+' '+t('pkPieces'):''),k:'dev'}));
   return out;}
 function renderDispatch(){
   const el=document.getElementById('s-dhome');
