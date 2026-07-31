@@ -238,10 +238,31 @@ function copyLink(tok){
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link gekopieerd — stuur via WhatsApp'),()=>prompt('Kopieer deze link:',url));
 }
 
+/* ---------- no-token: paste link ---------- */
+function showLinkEntry(){
+  el('app').innerHTML='<div class="center"><div style="font-size:40px">🫐</div>'
+  +'<p style="margin-top:14px">Geen toegangslink. Open de persoonlijke link die je van Miss Berry hebt gekregen — of plak hem hieronder.</p>'
+  +'<input id="lnk" placeholder="Plak hier je link of code" autocomplete="off" style="margin-top:14px;width:100%;max-width:340px;padding:13px;border:1.5px solid var(--line);border-radius:12px;font-size:15px">'
+  +'<div style="max-width:340px;margin:0 auto"><button class="btn" onclick="useLink()">Openen</button></div>'
+  +'<p id="lerr" style="color:#b3261e;margin-top:10px"></p></div>';
+}
+async function useLink(){
+  const v=el('lnk').value.trim(); if(!v)return;
+  let t=null,a=null;
+  try{const u=new URL(v); t=u.searchParams.get('t'); a=u.searchParams.get('admin');}catch(e){}
+  if(!t&&!a&&/^[0-9a-f]{64}$/i.test(v)){
+    try{await rpc('grower_context',{p_token:v}); t=v;}
+    catch(e){ try{await rpc('admin_overview',{p_token:v}); a=v;}catch(e2){} }
+  }
+  if(a)location.href='?admin='+encodeURIComponent(a);
+  else if(t)location.href='?t='+encodeURIComponent(t);
+  else el('lerr').textContent='Geen geldige link of code herkend.';
+}
+
 /* ---------- boot ---------- */
 if(A_TOKEN)loadAdmin();
 else if(G_TOKEN)loadGrower();
-else fail('Geen toegangslink. Open de persoonlijke link die je van Miss Berry hebt gekregen.');
+else showLinkEntry();
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
