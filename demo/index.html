@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#C2185B">
+<title>Miss Berry — Teler Portaal (mockup)</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- v3.0 multi-role demo -->
+<style>
+  :root{
+    --berry:#C2185B; --berry-dark:#8E0E3D; --berry-light:#FCE4EC;
+    --green:#2E7D32; --green-light:#E8F5E9;
+    --ink:#212121; --grey:#757575; --line:#E0E0E0; --bg:#F5F0F2;
+    --warn:#E65100; --warn-light:#FFF3E0;
+    --blue:#1565C0; --blue-light:#E3F2FD;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; touch-action:manipulation;}
+  html,body{overscroll-behavior:none;}
+  body{background:#3a3440; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:24px 8px;}
+  .phone{width:390px; max-width:100%; height:800px; background:var(--bg); border-radius:36px; border:10px solid #1a171d; overflow:hidden; display:flex; flex-direction:column; position:relative; box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  header{background:var(--berry); color:#fff; padding:14px 18px; display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  header .logo{font-weight:800; font-size:17px; letter-spacing:.3px;}
+  header .sub{font-size:11px; opacity:.85;}
+  #timer{margin-left:auto; background:rgba(255,255,255,.18); padding:4px 10px; border-radius:12px; font-size:13px; font-variant-numeric:tabular-nums;}
+  #roleBtn,#langBtn{background:rgba(255,255,255,.18); border:none; color:#fff; padding:4px 10px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer;}
+  #roleBtn{margin-left:auto;}
+  #roleBtn.pushed{margin-left:0;}
+  .screen{flex:1; overflow-y:auto; padding:18px; display:none; flex-direction:column;}
+  .screen.active{display:flex;}
+  h2{font-size:20px; margin-bottom:4px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--grey); margin-bottom:16px;}
+  .steps{display:flex; gap:5px; margin-bottom:14px;}
+  .steps i{flex:1; height:4px; border-radius:2px; background:var(--line);}
+  .steps i.done{background:var(--berry);}
+  .card{background:#fff; border:2px solid var(--line); border-radius:14px; padding:16px; margin-bottom:10px; font-size:16px; font-weight:600; display:flex; align-items:center; gap:12px; cursor:pointer; transition:.12s;}
+  .card:active{transform:scale(.98);}
+  .card.sel{border-color:var(--berry); background:var(--berry-light);}
+  .card .em{font-size:24px;}
+  .steprow{background:#fff; border:2px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;}
+  .steprow label{font-size:15px; font-weight:600;}
+  .steprow label small{display:block; font-weight:400; font-size:12px; color:var(--grey);}
+  .ctrls{display:flex; align-items:center; gap:0;}
+  .ctrls button{width:44px; height:44px; border-radius:12px; border:none; background:var(--berry-light); color:var(--berry); font-size:22px; font-weight:700; cursor:pointer;}
+  .ctrls .val{width:52px; text-align:center; font-size:20px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+  .chip{padding:12px 16px; border-radius:22px; border:2px solid var(--line); background:#fff; font-size:15px; font-weight:600; cursor:pointer;}
+  .chip.sel{border-color:var(--berry); background:var(--berry-light); color:var(--berry-dark);}
+  .photobox{border:2px dashed var(--berry); border-radius:14px; background:#fff; padding:26px 16px; text-align:center; cursor:pointer; margin-bottom:12px;}
+  .photobox .em{font-size:40px;}
+  .photobox p{font-size:14px; color:var(--grey); margin-top:6px;}
+  .photobox img{max-width:100%; border-radius:10px;}
+  .rule{background:var(--warn-light); border-left:4px solid var(--warn); border-radius:8px; padding:10px 12px; font-size:13px; color:#5d4037; margin-bottom:12px;}
+  .check{background:#fff; border:2px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start; cursor:pointer; font-size:15px;}
+  .check.sel{border-color:var(--green); background:var(--green-light);}
+  .check .box{width:26px; height:26px; border-radius:8px; border:2px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800;}
+  .check.sel .box{background:var(--green); border-color:var(--green);}
+  .check small{display:block; color:var(--grey); font-size:12px; margin-top:2px; font-weight:400;}
+  .sumrow{display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); font-size:15px; gap:12px;}
+  .sumrow b{text-align:right;}
+  .summary{background:#fff; border-radius:14px; padding:6px 16px; margin-bottom:14px;}
+  .btn{display:block; width:100%; padding:16px; border:none; border-radius:14px; background:var(--berry); color:#fff; font-size:17px; font-weight:700; cursor:pointer; margin-top:auto;}
+  .btn:disabled{background:#ccc; cursor:default;}
+  .btn.ghost{background:transparent; color:var(--grey); font-weight:600; font-size:14px; padding:10px; margin-top:6px;}
+  .btn.green{background:var(--green);}
+  .btn.inline{margin-top:0;}
+  .done-icon{width:84px;height:84px;border-radius:50%;background:var(--green-light);color:var(--green);font-size:44px;display:flex;align-items:center;justify-content:center;margin:30px auto 16px;}
+  .center{text-align:center;}
+  .bigtime{font-size:34px; font-weight:800; color:var(--berry); font-variant-numeric:tabular-nums;}
+  .ref{background:#fff;border-radius:12px;padding:12px;margin:16px 0;font-size:14px;color:var(--grey);}
+  .ref b{color:var(--ink); font-size:16px; letter-spacing:1px;}
+  .home-card{background:#fff; border-radius:16px; padding:20px; margin-bottom:12px; cursor:pointer; border:2px solid var(--line);}
+  .home-card:active{transform:scale(.98);}
+  .home-card h3{font-size:17px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .home-card p{font-size:13px; color:var(--grey); margin-top:4px;}
+  .badge{background:var(--warn-light); color:var(--warn); font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px;}
+  .badge.green{background:var(--green-light); color:var(--green);}
+  .note{font-size:11px; color:#9e9e9e; text-align:center; margin-top:14px;}
+  /* status chips */
+  .st{font-size:11px; font-weight:700; padding:3px 9px; border-radius:10px; white-space:nowrap;}
+  .st.announced{background:#ECEFF1; color:#546E7A;}
+  .st.ready{background:var(--green-light); color:var(--green);}
+  .st.loaded{background:var(--berry-light); color:var(--berry-dark);}
+  .st.delivered{background:var(--blue-light); color:var(--blue);}
+  .st.weighed{background:#EDE7F6; color:#5E35B1;}
+  /* dispatch */
+  .kpis{display:flex; gap:8px; margin-bottom:14px;}
+  .kpi{flex:1; background:#fff; border-radius:14px; padding:12px 6px; text-align:center; border:2px solid var(--line);}
+  .kpi b{font-size:22px; display:block; color:var(--ink);}
+  .kpi span{font-size:11px; color:var(--grey);}
+  .kpi.warn{border-color:var(--warn); background:var(--warn-light);}
+  .kpi.warn b{color:var(--warn);}
+  .exc{background:var(--warn-light); border-left:4px solid var(--warn); border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:8px; color:#4E342E;}
+  .exc b{display:block; font-size:13px;}
+  .exc small{color:#795548;}
+  .routehead{display:flex; align-items:center; gap:8px; margin:14px 0 8px; font-size:14px; font-weight:700; color:var(--ink);}
+  .routehead span{font-weight:400; color:var(--grey); font-size:12px;}
+  .stoprow{background:#fff; border:2px solid var(--line); border-radius:12px; padding:11px 13px; margin-bottom:8px; display:flex; align-items:center; gap:10px;}
+  .stoprow .em{font-size:20px;}
+  .stoprow .who{flex:1; min-width:0;}
+  .stoprow .who b{font-size:14px; display:block;}
+  .stoprow .who small{font-size:11px; color:var(--grey); display:block;}
+  .stoprow .who .po{font-size:10px; color:var(--blue); display:block; margin-top:2px;}
+  .stoprow.tappable{cursor:pointer;}
+  .stoprow.tappable:active{transform:scale(.98);}
+  .sechead{font-size:13px; font-weight:700; color:var(--grey); text-transform:uppercase; letter-spacing:.5px; margin:12px 0 8px;}
+  /* packaging */
+  .embgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
+  .embitem{background:#fff; border:2px solid var(--line); border-radius:12px; padding:12px; text-align:center;}
+  .embitem b{font-size:20px; display:block;}
+  .embitem span{font-size:12px; color:var(--grey);}
+  /* deviation buttons */
+  .devgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;}
+  .devbtn{background:#fff; border:2px solid var(--warn); color:var(--warn); border-radius:12px; padding:12px 8px; font-size:13px; font-weight:700; cursor:pointer; text-align:center;}
+  .devbtn:active{transform:scale(.97);}
+  /* role overlay */
+  .ovl{position:absolute; inset:0; background:rgba(26,23,29,.55); display:none; align-items:flex-end; z-index:50;}
+  .ovl.open{display:flex;}
+  .sheet{background:#fff; width:100%; border-radius:20px 20px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom));}
+  .sheet h3{font-size:16px; margin-bottom:12px;}
+  .rolecard{display:flex; align-items:center; gap:12px; padding:14px; border:2px solid var(--line); border-radius:14px; margin-bottom:8px; cursor:pointer; font-weight:600; font-size:15px;}
+  .rolecard.sel{border-color:var(--berry); background:var(--berry-light);}
+  .rolecard small{display:block; font-weight:400; font-size:12px; color:var(--grey);}
+  .rolecard .em{font-size:22px;}
+  /* toast */
+  #toast{position:absolute; bottom:24px; left:16px; right:16px; background:#2b272f; color:#fff; padding:13px 16px; border-radius:14px; font-size:13px; opacity:0; transform:translateY(12px); transition:.25s; z-index:60; pointer-events:none;}
+  #toast.show{opacity:1; transform:none;}
+  /* real phone or installed PWA: drop the fake frame, fill the screen */
+  @media (max-width:520px), (display-mode:standalone){
+    body{padding:0; min-height:auto; height:100dvh; overflow:hidden; background:var(--berry);}
+    .phone{width:100%; max-width:none; height:100dvh; border:none; border-radius:0; box-shadow:none;}
+    header{padding-top:calc(14px + env(safe-area-inset-top));}
+    .screen{padding-bottom:calc(18px + env(safe-area-inset-bottom));}
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <header>
+    <div>
+      <div class="logo">🍓 Miss Berry</div>
+      <div class="sub" id="roleSub"></div>
+    </div>
+    <div id="timer">0:00</div>
+    <button id="roleBtn" onclick="openRoles()">👤</button>
+    <button id="langBtn" onclick="toggleLang()">EN</button>
+  </header>
+
+  <!-- ============ GROWER ============ -->
+  <div class="screen active" id="s-home">
+    <h2 data-i18n="homeTitle"></h2>
+    <p class="hint" data-i18n="homeHint"></p>
+    <div class="home-card" onclick="startFlow()">
+      <h3>📦 <span data-i18n="homeNew"></span></h3>
+      <p data-i18n="homeNewP"></p>
+    </div>
+    <div class="home-card" onclick="showReady()">
+      <h3>✅ <span data-i18n="homeReady"></span> <span class="badge" id="readyBadge"></span></h3>
+      <p data-i18n="homeReadyP"></p>
+    </div>
+    <div class="home-card" onclick="showHist()">
+      <h3>📋 <span data-i18n="homeHist"></span></h3>
+      <p data-i18n="homeHistP"></p>
+    </div>
+    <div class="home-card" onclick="showEmb()">
+      <h3>🥁 <span data-i18n="homeEmb"></span></h3>
+      <p data-i18n="homeEmbP"></p>
+    </div>
+    <p class="note" data-i18n="homeNote"></p>
+  </div>
+
+  <div class="screen" id="s-product">
+    <div class="steps"><i class="done"></i><i></i><i></i><i></i><i></i></div>
+    <h2 data-i18n="prodTitle"></h2>
+    <p class="hint" data-i18n="prodHint"></p>
+    <div class="card" onclick="pick('product','strawberries',this)"><span class="em">🍓</span> <span data-i18n="strawberries"></span></div>
+    <div class="card" onclick="pick('product','blueberries',this)"><span class="em">🫐</span> <span data-i18n="blueberries"></span></div>
+    <div class="card" onclick="pick('product','raspberries',this)"><span class="em">🍇</span> <span data-i18n="raspberries"></span></div>
+    <div class="card" onclick="pick('product','blackberries',this)"><span class="em">🖤</span> <span data-i18n="blackberries"></span></div>
+  </div>
+
+  <div class="screen" id="s-volume">
+    <div class="steps"><i class="done"></i><i class="done"></i><i></i><i></i><i></i></div>
+    <h2 data-i18n="volTitle"></h2>
+    <p class="hint" data-i18n="volHint"></p>
+    <div class="steprow">
+      <label><span data-i18n="pallets"></span><small data-i18n="palletsSmall"></small></label>
+      <div class="ctrls">
+        <button onclick="step('pallets',-1)">−</button>
+        <div class="val" id="v-pallets">1</div>
+        <button onclick="step('pallets',1)">+</button>
+      </div>
+    </div>
+    <div class="steprow">
+      <label><span data-i18n="drums"></span><small data-i18n="drumsSmall"></small></label>
+      <div class="ctrls">
+        <button onclick="step('drums',-1)">−</button>
+        <div class="val" id="v-drums">0</div>
+        <button onclick="step('drums',1)">+</button>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:6px" data-i18n="pickupDay"></p>
+    <div class="chips" id="days"></div>
+    <button class="btn" id="b-volume" disabled onclick="go('s-photo')" data-i18n="next"></button>
+    <button class="btn ghost" onclick="go('s-product')" data-i18n="back"></button>
+  </div>
+
+  <div class="screen" id="s-photo">
+    <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i></i><i></i></div>
+    <h2 data-i18n="photoTitle"></h2>
+    <p class="hint" data-i18n="photoHint"></p>
+    <div class="rule" data-i18n="photoRule"></div>
+    <div class="photobox" id="photobox" onclick="document.getElementById('file').click()">
+      <div class="em">📷</div>
+      <p data-i18n="photoTap"></p>
+    </div>
+    <input type="file" id="file" accept="image/*" capture="environment" hidden onchange="photoTaken(event)">
+    <button class="btn" id="b-photo" disabled onclick="go('s-checks')" data-i18n="next"></button>
+    <button class="btn ghost" onclick="go('s-volume')" data-i18n="back"></button>
+  </div>
+
+  <div class="screen" id="s-checks">
+    <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i></i></div>
+    <h2 data-i18n="checkTitle"></h2>
+    <p class="hint" data-i18n="checkHint"></p>
+    <div class="check" onclick="toggleCheck(this,0)">
+      <div class="box">✓</div>
+      <div><span data-i18n="check1"></span><small data-i18n="check1s"></small></div>
+    </div>
+    <div class="check" onclick="toggleCheck(this,1)">
+      <div class="box">✓</div>
+      <div><span data-i18n="check2"></span><small data-i18n="check2s"></small></div>
+    </div>
+    <div class="check" onclick="toggleCheck(this,2)">
+      <div class="box">✓</div>
+      <div><span data-i18n="check3"></span> <b id="harvestLabel"></b><small data-i18n="check3s"></small></div>
+    </div>
+    <button class="btn" id="b-checks" disabled onclick="buildSummary()" data-i18n="next"></button>
+    <button class="btn ghost" onclick="go('s-photo')" data-i18n="back"></button>
+  </div>
+
+  <div class="screen" id="s-review">
+    <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></div>
+    <h2 data-i18n="revTitle"></h2>
+    <p class="hint" data-i18n="revHint"></p>
+    <div class="summary" id="summary"></div>
+    <button class="btn green" onclick="submitFlow()" data-i18n="submit"></button>
+    <button class="btn ghost" onclick="go('s-checks')" data-i18n="back"></button>
+  </div>
+
+  <div class="screen" id="s-done">
+    <div class="done-icon">✓</div>
+    <div class="center">
+      <h2 data-i18n="doneTitle"></h2>
+      <p class="hint" data-i18n="doneP"></p>
+      <div class="bigtime" id="finalTime">–</div>
+      <p class="hint" data-i18n="doneTime"></p>
+      <div class="ref"><span data-i18n="reference"></span><br><b id="refnr">MB-2026-0000</b><br><span class="po" id="refpo" style="font-size:12px;color:var(--blue)"></span></div>
+    </div>
+    <button class="btn" onclick="backHome()" data-i18n="backHome"></button>
+  </div>
+
+  <!-- G3 ready confirmation -->
+  <div class="screen" id="s-ready">
+    <h2 data-i18n="readyTitle"></h2>
+    <p class="hint" data-i18n="readyHint"></p>
+    <div class="rule" data-i18n="readyRule"></div>
+    <div id="readyList"></div>
+    <button class="btn ghost" onclick="go('s-home')" data-i18n="back"></button>
+  </div>
+
+  <!-- G6 history -->
+  <div class="screen" id="s-hist">
+    <h2 data-i18n="histTitle"></h2>
+    <p class="hint" data-i18n="histHint"></p>
+    <div id="histList"></div>
+    <p class="note" data-i18n="histNote"></p>
+    <button class="btn ghost" onclick="go('s-home')" data-i18n="back"></button>
+  </div>
+
+  <!-- G5 packaging -->
+  <div class="screen" id="s-emb">
+    <h2 data-i18n="embTitle"></h2>
+    <p class="hint" data-i18n="embHint"></p>
+    <div class="embgrid" id="embGrid"></div>
+    <div class="rule" data-i18n="embRule"></div>
+    <button class="btn inline" id="embReqBtn" onclick="requestEmb()" data-i18n="embRequest"></button>
+    <div class="sechead" data-i18n="pkHead"></div>
+    <p class="hint" data-i18n="pkHint"></p>
+    <div class="check" id="pk-pkDirty" onclick="pkPick('pkDirty')"><div class="box">✓</div><div><span data-i18n="pkDirty"></span></div></div>
+    <div class="check" id="pk-pkBroken" onclick="pkPick('pkBroken')"><div class="box">✓</div><div><span data-i18n="pkBroken"></span></div></div>
+    <div class="check" id="pk-pkShort" onclick="pkPick('pkShort')"><div class="box">✓</div><div><span data-i18n="pkShort"></span></div></div>
+    <div id="pkDetail"></div>
+    <button class="btn inline" id="pkBtn" disabled onclick="pkSubmit()" data-i18n="pkSend"></button>
+    <button class="btn ghost" onclick="go('s-home')" data-i18n="back"></button>
+  </div>
+
+  <!-- ============ DISPATCH ============ -->
+  <div class="screen" id="s-dhome"></div>
+
+  <!-- ============ DRIVER ============ -->
+  <div class="screen" id="s-chome"></div>
+  <div class="screen" id="s-cstop"></div>
+
+  <!-- role switcher -->
+  <div class="ovl" id="roleOvl" onclick="if(event.target===this)closeRoles()">
+    <div class="sheet">
+      <h3 data-i18n="rolePick"></h3>
+      <div class="rolecard" id="rc-grower" onclick="setRole('grower')"><span class="em">🧑‍🌾</span><div><span data-i18n="roleGrower"></span><small data-i18n="roleGrowerS"></small></div></div>
+      <div class="rolecard" id="rc-dispatch" onclick="setRole('dispatch')"><span class="em">🗂️</span><div><span data-i18n="roleDispatch"></span><small data-i18n="roleDispatchS"></small></div></div>
+      <div class="rolecard" id="rc-driver" onclick="setRole('driver')"><span class="em">🚛</span><div><span data-i18n="roleDriver"></span><small data-i18n="roleDriverS"></small></div></div>
+      <button class="btn ghost" onclick="resetDemo()" data-i18n="resetDemo"></button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+/* ================= i18n ================= */
+const T={
+nl:{
+  subGrower:'Teler: Kwekerij De Vries',subDispatch:'Dispatch — Manon',subDriver:'Chauffeur — Van Dijk Transport',
+  homeTitle:'Goedemorgen 👋',homeHint:'Wat wilt u doen?',
+  homeNew:'Nieuwe aanmelding',homeNewP:'Volume aanmelden voor de volgende ophaaldag',
+  homeReady:'Gereedmelden',homeReadyP:'Bevestig dat uw pallets klaarstaan voor transport',
+  homeHist:'Mijn aanmeldingen',homeHistP:'Historie, statussen & teruggerekende gewichten',
+  homeEmb:'Emballage',homeEmbP:'Drums, deksels, liners & pallets — saldo en bijbestellen',
+  homeNote:'Mockup — de timer start zodra u een aanmelding begint.',
+  prodTitle:'Welk product?',prodHint:'Kies één product per aanmelding',
+  strawberries:'Aardbeien',blueberries:'Blauwe bessen',raspberries:'Frambozen',blackberries:'Bramen',
+  volTitle:'Hoeveelheid & ophaaldag',volHint:'1 pallet = 4 drums (220 L)',
+  pallets:'Pallets',palletsSmall:'4 drums per pallet',drums:'Losse drums',drumsSmall:'optioneel',
+  pickupDay:'Ophaaldag',next:'Verder',back:'← Terug',backHome:'Naar start',
+  photoTitle:'Foto gesorteerd fruit',photoHint:'Fruit nog in 5 kg-kratten, vóór het storten in drums',
+  photoRule:'📸 Geen foto = procedure niet gevolgd. De foto is uw kwaliteitsbewijs.',
+  photoTap:'Tik om een foto te maken',
+  checkTitle:'Kwaliteitscheck',checkHint:'Bevestig de volgende punten',
+  check1:'Minimaal 12 uur gekoeld op ≤ 5 °C',check1s:'Koeling is de meest voorkomende afwijking — belangrijk!',
+  check2:'Geen alcohol- of schimmelgeur',check2s:'Visuele en geurcontrole uitgevoerd',
+  check3:'Oogstdatum:',check3s:'Tik om te wijzigen (gisteren/vandaag)',
+  revTitle:'Controleren & versturen',revHint:'Klopt alles?',submit:'✓ Aanmelding versturen',
+  doneTitle:'Aangemeld!',doneP:'Inkooporder is automatisch aangemaakt in Business Central. Miss Berry en de vervoerder zijn geïnformeerd.',
+  doneTime:'totale invultijd (doel: < 2:00)',reference:'Referentie',
+  today:'vandaag',yesterday:'gisteren',
+  sumProduct:'Product',sumVolume:'Volume',sumNet:'Indicatief netto',sumDay:'Ophaaldag',
+  sumHarvest:'Oogstdatum',sumPhoto:'Foto kratten',sumPhotoV:'✅ toegevoegd',
+  sumCool:'Koeling ≥12 u ≤5 °C',sumCoolV:'✅ bevestigd',
+  volFmt:(p,d,tot)=>p+' pallet(s) + '+d+' drum(s) = '+tot+' drums',
+  dayNames:['zo','ma','di','wo','do','vr','za'],
+  title:'Miss Berry — Platform (mockup)',locale:'nl-NL',
+  stAnnounced:'aangemeld',stReady:'gereed',stLoaded:'geladen',stDelivered:'geleverd',stWeighed:'gewogen',
+  readyTitle:'Gereedmelden',readyHint:'Bevestig de avond vóór ophalen dat alles klaarstaat',
+  readyNone:'Geen openstaande gereedmeldingen 🎉',
+  readyRule:'❄️ Waarom max. 24 u? In de drum gaat de kwaliteit snel achteruit en is het fruit door de massa moeilijk koud te houden. Vul de drums daarom pas kort voor transport.',
+  rc1:'Drums gevuld ≤ 24 u voor transport',rc2:'Labels met pakdatum compleet',rc3:'Pallets klaar op laadplek',
+  readyConfirm:'✓ Gereed melden',readyDoneToast:'Gereedmelding verstuurd — laadbord bij Miss Berry bijgewerkt',
+  histTitle:'Mijn aanmeldingen',histHint:'Statussen en teruggerekende netto-gewichten',
+  histNote:'Netto = brutogewicht klant − tarra (10 kg/drum, 25 kg/pallet)',
+  netWeight:'netto',
+  embTitle:'Emballage-saldo',embHint:'Uw actuele voorraad verpakkingsmateriaal',
+  embDrums:'Drums 220 L',embLids:'Deksels',embLiners:'Liners',embPallets:'Blokpallets',
+  embRule:'Tekorten? Vraag bijlevering aan — de klant levert op instructie van Miss Berry.',
+  embRequest:'📦 Bijlevering aanvragen',embReqToast:'Aanvraag verstuurd — Miss Berry regelt bijlevering bij de klant',
+  pkHead:'Probleem met geleverde emballage?',pkHint:'Melding gaat direct naar Miss Berry logistiek — geen e-mail nodig',
+  pkDirty:'🏷️ Vuil of oude etiketten',pkDirtyHint:'Maak een foto van de gebreken en verstuur de melding',
+  pkBroken:'💥 Kapotte emballage',pkBrokenHint:'Tel de kapotte stuks en geef het aantal door',
+  pkShort:'🔢 Te veel of te weinig ontvangen',pkShortHint:'Geef het werkelijk ontvangen aantal door',
+  pkCount:'Aantal',pkPhotoBtn:'Foto van gebrek maken',pkPhotoDone:'Foto toegevoegd — tik voor extra foto',
+  pkSend:'Melding versturen',pkToast:'Melding verstuurd naar Miss Berry logistiek',
+  exPack:'Emballage-melding',pkPieces:'stuks',
+  rolePick:'Bekijk het platform als…',
+  roleGrower:'Teler',roleGrowerS:'Kwekerij De Vries — aanmelden, gereedmelden, emballage',
+  roleDispatch:'Miss Berry dispatch',roleDispatchS:'Manon — laadbord, uitzonderingen, Business Central',
+  roleDriver:'Chauffeur',roleDriverS:'Van Dijk Transport — stopslijst, laden bevestigen',
+  resetDemo:'↺ Demo-dag opnieuw instellen',resetToast:'Demo-dag opnieuw ingesteld',
+  dTitle:'Vandaag',dHint:'Alles wat vroeger via telefoon en WhatsApp ging',
+  dAnn:'aanmeldingen',dPallets:'pallets',dExc:'uitzonderingen',
+  dExcHead:'Uitzonderingen — alleen dit vraagt uw aandacht',
+  dBoardHead:'Laadbord per route',
+  dCutoff:(n)=>'Cut-off 13:30 — '+n+' aanmeldingen binnen via portaal, 0 via WhatsApp',
+  exNoPhoto:'Aanmelding zonder kratfoto',exNoPhotoS:'Procedure niet aantoonbaar — teler herinnerd via app',
+  exNoReady:'Nog geen gereedmelding',exNoReadyS:'Risico op verrassing bij laden morgenochtend',
+  exDev:'Afwijking gemeld door chauffeur',
+  poLine:(po)=>'→ Business Central: '+po+' ✓ automatisch aangemaakt',
+  cTitle:'Mijn stops',cHint:'Route van morgen — alles wat u moet laden, zonder bellen',
+  cStopCount:(n,p)=>n+' stops · '+p+' pallets verwacht',
+  cExpected:'Verwacht',cContact:'Contact',
+  cConfirmHead:'Laden bevestigen',cLabels:'Labels met pakdatum gecontroleerd',
+  cSpot:'Steekproef drum uitgevoerd (Supplier Manual)',
+  cLoaded:'✓ Geladen — meld automatisch',
+  cLoadedToast:'Geladen ✓ Vrieshuis en klant automatisch geïnformeerd',
+  cDevHead:'Afwijking? Eén tik:',
+  devNotReady:'Product niet gereed',devNobody:'Niemand aanwezig',devTruckFull:'Vrachtwagen vol',devQuality:'Twijfel kwaliteit',
+  devToast:'Afwijking gemeld — dispatch ziet dit direct',
+  demoNote:'Demo-dag met voorbeelddata. Uw acties in de ene rol zijn direct zichtbaar in de andere.'
+},
+en:{
+  subGrower:'Grower: Kwekerij De Vries',subDispatch:'Dispatch — Manon',subDriver:'Driver — Van Dijk Transport',
+  homeTitle:'Good morning 👋',homeHint:'What would you like to do?',
+  homeNew:'New announcement',homeNewP:'Announce volume for the next pickup day',
+  homeReady:'Ready confirmation',homeReadyP:'Confirm your pallets are ready for transport',
+  homeHist:'My announcements',homeHistP:'History, statuses & back-calculated weights',
+  homeEmb:'Packaging',homeEmbP:'Drums, lids, liners & pallets — balance and reorder',
+  homeNote:'Mockup — the timer starts as soon as you begin an announcement.',
+  prodTitle:'Which product?',prodHint:'Choose one product per announcement',
+  strawberries:'Strawberries',blueberries:'Blueberries',raspberries:'Raspberries',blackberries:'Blackberries',
+  volTitle:'Quantity & pickup day',volHint:'1 pallet = 4 drums (220 L)',
+  pallets:'Pallets',palletsSmall:'4 drums per pallet',drums:'Loose drums',drumsSmall:'optional',
+  pickupDay:'Pickup day',next:'Continue',back:'← Back',backHome:'Home',
+  photoTitle:'Photo of sorted fruit',photoHint:'Fruit still in 5 kg crates, before tipping into drums',
+  photoRule:'📸 No photo = procedure not followed. The photo is your quality evidence.',
+  photoTap:'Tap to take a photo',
+  checkTitle:'Quality check',checkHint:'Confirm the following points',
+  check1:'Cooled at ≤ 5 °C for at least 12 hours',check1s:'Cooling is the most common deviation — important!',
+  check2:'No alcohol or mould smell',check2s:'Visual and smell check performed',
+  check3:'Harvest date:',check3s:'Tap to change (yesterday/today)',
+  revTitle:'Review & submit',revHint:'Is everything correct?',submit:'✓ Submit announcement',
+  doneTitle:'Submitted!',doneP:'Purchase order created automatically in Business Central. Miss Berry and the carrier have been informed.',
+  doneTime:'total completion time (target: < 2:00)',reference:'Reference',
+  today:'today',yesterday:'yesterday',
+  sumProduct:'Product',sumVolume:'Volume',sumNet:'Indicative net',sumDay:'Pickup day',
+  sumHarvest:'Harvest date',sumPhoto:'Crate photo',sumPhotoV:'✅ added',
+  sumCool:'Cooling ≥12 h ≤5 °C',sumCoolV:'✅ confirmed',
+  volFmt:(p,d,tot)=>p+' pallet(s) + '+d+' drum(s) = '+tot+' drums',
+  dayNames:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  title:'Miss Berry — Platform (mockup)',locale:'en-GB',
+  stAnnounced:'announced',stReady:'ready',stLoaded:'loaded',stDelivered:'delivered',stWeighed:'weighed',
+  readyTitle:'Ready confirmation',readyHint:'Confirm the evening before pickup that everything is ready',
+  readyNone:'No open ready confirmations 🎉',
+  readyRule:'❄️ Why max. 24 h? Quality deteriorates quickly in the drum, and the mass makes the fruit hard to keep cold. So fill the drums as close to transport as possible.',
+  rc1:'Drums filled ≤ 24 h before transport',rc2:'Labels with pack date complete',rc3:'Pallets at the loading spot',
+  readyConfirm:'✓ Confirm ready',readyDoneToast:'Ready confirmation sent — Miss Berry\'s loading board updated',
+  histTitle:'My announcements',histHint:'Statuses and back-calculated net weights',
+  histNote:'Net = customer gross weight − tare (10 kg/drum, 25 kg/pallet)',
+  netWeight:'net',
+  embTitle:'Packaging balance',embHint:'Your current packaging material stock',
+  embDrums:'Drums 220 L',embLids:'Lids',embLiners:'Liners',embPallets:'Block pallets',
+  embRule:'Running short? Request replenishment — the customer supplies on Miss Berry\'s instruction.',
+  embRequest:'📦 Request replenishment',embReqToast:'Request sent — Miss Berry arranges replenishment with the customer',
+  pkHead:'Problem with delivered packaging?',pkHint:'Report goes straight to Miss Berry logistics — no e-mail needed',
+  pkDirty:'🏷️ Dirty or old labels',pkDirtyHint:'Take a photo of the defects and send the report',
+  pkBroken:'💥 Broken packaging',pkBrokenHint:'Count the broken pieces and report the number',
+  pkShort:'🔢 Received too much or too little',pkShortHint:'Report the amount actually received',
+  pkCount:'Amount',pkPhotoBtn:'Take photo of defect',pkPhotoDone:'Photo added — tap for another',
+  pkSend:'Send report',pkToast:'Report sent to Miss Berry logistics',
+  exPack:'Packaging report',pkPieces:'pcs',
+  rolePick:'View the platform as…',
+  roleGrower:'Grower',roleGrowerS:'Kwekerij De Vries — announce, confirm ready, packaging',
+  roleDispatch:'Miss Berry dispatch',roleDispatchS:'Manon — loading board, exceptions, Business Central',
+  roleDriver:'Driver',roleDriverS:'Van Dijk Transport — stop list, confirm loading',
+  resetDemo:'↺ Reset demo day',resetToast:'Demo day reset',
+  dTitle:'Today',dHint:'Everything that used to go via phone and WhatsApp',
+  dAnn:'announcements',dPallets:'pallets',dExc:'exceptions',
+  dExcHead:'Exceptions — only this needs your attention',
+  dBoardHead:'Loading board per route',
+  dCutoff:(n)=>'Cut-off 13:30 — '+n+' announcements in via portal, 0 via WhatsApp',
+  exNoPhoto:'Announcement without crate photo',exNoPhotoS:'Procedure not evidenced — grower reminded via app',
+  exNoReady:'No ready confirmation yet',exNoReadyS:'Risk of a surprise at loading tomorrow morning',
+  exDev:'Deviation flagged by driver',
+  poLine:(po)=>'→ Business Central: '+po+' ✓ created automatically',
+  cTitle:'My stops',cHint:'Tomorrow\'s route — everything to load, no phone calls',
+  cStopCount:(n,p)=>n+' stops · '+p+' pallets expected',
+  cExpected:'Expected',cContact:'Contact',
+  cConfirmHead:'Confirm loading',cLabels:'Labels with pack date checked',
+  cSpot:'Random drum spot-check done (Supplier Manual)',
+  cLoaded:'✓ Loaded — notify automatically',
+  cLoadedToast:'Loaded ✓ Freezer warehouse and customer informed automatically',
+  cDevHead:'Deviation? One tap:',
+  devNotReady:'Product not ready',devNobody:'Nobody present',devTruckFull:'Truck full',devQuality:'Quality doubt',
+  devToast:'Deviation flagged — dispatch sees this immediately',
+  demoNote:'Demo day with example data. Your actions in one role are immediately visible in the others.'
+}};
+let L=localStorage.getItem('mb-lang')||'nl';
+function t(k){return T[L][k];}
+function toggleLang(){L=L==='nl'?'en':'nl';localStorage.setItem('mb-lang',L);applyLang();}
+
+/* ================= demo state ================= */
+const EMO={strawberries:'🍓',blueberries:'🫐',raspberries:'🍇',blackberries:'🖤'};
+const SEED={
+  ann:[
+    {id:'a0',grower:'Kwekerij De Vries',addr:'Veldweg 12, Boskoop',tel:'06-11 22 33 44',product:'strawberries',pallets:1,drums:2,day:1,photo:true,status:'announced',po:'PO-26-1040',route:0,mine:true},
+    {id:'a1',grower:'Kwekerij Jansen',addr:'Dorpsstraat 8, Venlo',tel:'06-55 66 77 88',product:'strawberries',pallets:2,drums:0,day:1,photo:false,status:'announced',po:'PO-26-1041',route:0},
+    {id:'a2',grower:'Peeters Fruit BV',addr:'Steenweg 44, Sint-Truiden (BE)',tel:'+32 470 12 34 56',product:'blueberries',pallets:1,drums:2,day:1,photo:true,status:'announced',po:'PO-26-1042',route:0},
+    {id:'a3',grower:'Obsthof Müller',addr:'Hauptstr. 21, Kleve (DE)',tel:'+49 151 234 5678',product:'raspberries',pallets:1,drums:0,day:1,photo:true,status:'ready',po:'PO-26-1043',route:1},
+    {id:'a4',grower:'Claes & Zonen',addr:'Fruitlaan 3, Borgloon (BE)',tel:'+32 495 98 76 54',product:'blackberries',pallets:1,drums:1,day:2,photo:true,status:'ready',po:'PO-26-1044',route:1}
+  ],
+  hist:[
+    {product:'strawberries',pallets:1,drums:2,daysAgo:7,status:'weighed',net:1238},
+    {product:'strawberries',pallets:2,drums:0,daysAgo:3,status:'delivered'},
+    {product:'raspberries',pallets:1,drums:0,daysAgo:2,status:'loaded'}
+  ],
+  pack:{drums:14,lids:16,liners:28,pallets:5},
+  exc:[],poSeq:1045,refSeq:317,embRequested:false
+};
+let S=null;
+function loadS(){try{S=JSON.parse(localStorage.getItem('mb-demo'))||null;}catch(e){S=null;}
+  if(!S||!S.ann)S=JSON.parse(JSON.stringify(SEED));}
+function saveS(){localStorage.setItem('mb-demo',JSON.stringify(S));}
+function resetDemo(){S=JSON.parse(JSON.stringify(SEED));saveS();closeRoles();renderAll();toast(t('resetToast'));}
+
+/* ================= roles ================= */
+let ROLE=localStorage.getItem('mb-role')||'grower';
+const ROLEHOME={grower:'s-home',dispatch:'s-dhome',driver:'s-chome'};
+function openRoles(){document.getElementById('roleOvl').classList.add('open');markRole();}
+function closeRoles(){document.getElementById('roleOvl').classList.remove('open');}
+function markRole(){['grower','dispatch','driver'].forEach(r=>document.getElementById('rc-'+r).classList.toggle('sel',ROLE===r));}
+function setRole(r){ROLE=r;localStorage.setItem('mb-role',r);closeRoles();
+  document.getElementById('timer').style.display=r==='grower'?'':'none';
+  document.getElementById('roleBtn').classList.toggle('pushed',r==='grower');
+  document.getElementById('roleSub').textContent=t(r==='grower'?'subGrower':r==='dispatch'?'subDispatch':'subDriver');
+  renderAll();go(ROLEHOME[r]);}
+
+/* ================= shared helpers ================= */
+function fmt(s){const m=Math.floor(s/60),ss=String(s%60).padStart(2,'0');return m+':'+ss;}
+function go(id){document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function dayName(offset){const d=new Date();d.setDate(d.getDate()+offset);return t('dayNames')[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1);}
+function pastDay(n){const d=new Date();d.setDate(d.getDate()-n);return t('dayNames')[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1);}
+function stChip(st){return '<span class="st '+st+'">'+t('st'+st[0].toUpperCase()+st.slice(1))+'</span>';}
+function volTxt(a){return a.pallets+'P'+(a.drums?' +'+a.drums+'D':'');}
+let toastTmr=null;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>el.classList.remove('show'),2600);}
+
+/* ================= announcement flow (G1/G2) ================= */
+const state={product:null,pallets:1,drums:0,day:null,photo:false,checks:[false,false,true],harvest:'today'};
+let t0=null,tInt=null;
+function tick(){const s=Math.floor((Date.now()-t0)/1000);document.getElementById('timer').textContent=fmt(s);}
+function startFlow(){state.product=null;state.pallets=1;state.drums=0;state.day=null;state.photo=false;state.checks=[false,false,true];
+  t0=Date.now();clearInterval(tInt);tInt=setInterval(tick,500);go('s-product');}
+function pick(key,val,el){state[key]=val;
+  el.parentElement.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');setTimeout(()=>go('s-volume'),180);}
+function step(key,d){state[key]=Math.max(0,state[key]+d);
+  if(state.pallets===0&&state.drums===0)state[key]=Math.max(1,state[key]);
+  document.getElementById('v-'+key).textContent=state[key];validateVolume();}
+function renderDays(){const wrap=document.getElementById('days');wrap.innerHTML='';
+  [1,2,3].forEach(off=>{const c=document.createElement('div');c.className='chip'+(state.day===off?' sel':'');c.textContent=dayName(off);
+    c.onclick=()=>{state.day=off;wrap.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');validateVolume();};
+    wrap.appendChild(c);});}
+function validateVolume(){document.getElementById('b-volume').disabled=!(state.day&&(state.pallets>0||state.drums>0));}
+function photoTaken(e){if(!e.target.files.length)return;state.photo=true;
+  const url=URL.createObjectURL(e.target.files[0]);
+  document.getElementById('photobox').innerHTML='<img src="'+url+'" alt="photo">';
+  document.getElementById('b-photo').disabled=false;}
+function toggleCheck(el,i){
+  if(i===2){state.harvest=state.harvest==='today'?'yesterday':'today';
+    document.getElementById('harvestLabel').textContent=t(state.harvest);
+    el.classList.add('sel');state.checks[2]=true;
+  }else{state.checks[i]=!state.checks[i];el.classList.toggle('sel',state.checks[i]);}
+  document.getElementById('b-checks').disabled=!(state.checks[0]&&state.checks[1]);}
+function buildSummary(){const totDrums=state.pallets*4+state.drums;const kg=totDrums*210;
+  document.getElementById('summary').innerHTML=
+    row(t('sumProduct'),t(state.product))+
+    row(t('sumVolume'),T[L].volFmt(state.pallets,state.drums,totDrums))+
+    row(t('sumNet'),'± '+kg.toLocaleString(t('locale'))+' kg')+
+    row(t('sumDay'),dayName(state.day))+
+    row(t('sumHarvest'),t(state.harvest))+
+    row(t('sumPhoto'),t('sumPhotoV'))+
+    row(t('sumCool'),t('sumCoolV'));
+  go('s-review');}
+function row(k,v){return '<div class="sumrow"><span>'+k+'</span><b>'+v+'</b></div>';}
+function submitFlow(){clearInterval(tInt);
+  const s=Math.floor((Date.now()-t0)/1000);
+  document.getElementById('finalTime').textContent=fmt(s);
+  const ref='MB-2026-0'+(S.refSeq++),po='PO-26-'+(S.poSeq++);
+  document.getElementById('refnr').textContent=ref;
+  document.getElementById('refpo').textContent=T[L].poLine(po);
+  S.ann.push({id:'u'+Date.now(),grower:'Kwekerij De Vries',addr:'Veldweg 12, Boskoop',tel:'06-11 22 33 44',
+    product:state.product,pallets:state.pallets,drums:state.drums,day:state.day,photo:true,status:'announced',po,route:0,mine:true});
+  saveS();renderAll();go('s-done');}
+function backHome(){document.getElementById('timer').textContent='0:00';go('s-home');}
+
+/* ================= G3 ready confirmation ================= */
+const readyChecks={};
+function showReady(){renderReady();go('s-ready');}
+function renderReady(){
+  const open=S.ann.filter(a=>a.mine&&a.status==='announced');
+  const el=document.getElementById('readyList');
+  if(!open.length){el.innerHTML='<p class="hint">'+t('readyNone')+'</p>';return;}
+  el.innerHTML=open.map(a=>{
+    const rc=readyChecks[a.id]||(readyChecks[a.id]=[false,false,false]);
+    return '<div class="home-card" style="cursor:default">'+
+      '<h3>'+EMO[a.product]+' '+t(a.product)+' — '+volTxt(a)+' <span class="st announced">'+dayName(a.day)+'</span></h3>'+
+      [0,1,2].map(i=>'<div class="check'+(rc[i]?' sel':'')+'" style="margin-top:8px;font-size:13px;padding:10px 12px" onclick="rcToggle(\''+a.id+'\','+i+')">'+
+        '<div class="box" style="width:22px;height:22px">✓</div><div>'+t('rc'+(i+1))+'</div></div>').join('')+
+      '<button class="btn green inline" style="margin-top:10px;padding:12px" '+(rc.every(x=>x)?'':'disabled')+' onclick="confirmReady(\''+a.id+'\')">'+t('readyConfirm')+'</button>'+
+    '</div>';}).join('');}
+function rcToggle(id,i){readyChecks[id][i]=!readyChecks[id][i];renderReady();}
+function confirmReady(id){const a=S.ann.find(x=>x.id===id);if(!a)return;
+  a.status='ready';saveS();renderAll();renderReady();toast(t('readyDoneToast'));}
+
+/* ================= G6 history ================= */
+function showHist(){renderHist();go('s-hist');}
+function renderHist(){
+  const cur=S.ann.filter(a=>a.mine).map(a=>({product:a.product,pallets:a.pallets,drums:a.drums,label:dayName(a.day),status:a.status}));
+  const past=S.hist.map(h=>({product:h.product,pallets:h.pallets,drums:h.drums,label:pastDay(h.daysAgo),status:h.status,net:h.net}));
+  document.getElementById('histList').innerHTML=[...cur,...past].map(x=>
+    '<div class="stoprow"><span class="em">'+EMO[x.product]+'</span>'+
+    '<div class="who"><b>'+t(x.product)+' — '+x.pallets+'P'+(x.drums?' +'+x.drums+'D':'')+'</b>'+
+    '<small>'+x.label+(x.net?' · '+x.net.toLocaleString(t('locale'))+' kg '+t('netWeight'):'')+'</small></div>'+
+    stChip(x.status)+'</div>').join('');}
+
+/* ================= G5 packaging ================= */
+function showEmb(){renderEmb();go('s-emb');}
+function renderEmb(){
+  const p=S.pack;
+  document.getElementById('embGrid').innerHTML=
+    '<div class="embitem"><b>'+p.drums+'</b><span>🥁 '+t('embDrums')+'</span></div>'+
+    '<div class="embitem"><b>'+p.lids+'</b><span>⭕ '+t('embLids')+'</span></div>'+
+    '<div class="embitem"><b>'+p.liners+'</b><span>🛍️ '+t('embLiners')+'</span></div>'+
+    '<div class="embitem"><b>'+p.pallets+'</b><span>🟫 '+t('embPallets')+'</span></div>';
+  const b=document.getElementById('embReqBtn');
+  b.disabled=S.embRequested;b.textContent=S.embRequested?'✓ '+t('embReqToast'):t('embRequest');
+  renderPkDetail();}
+function requestEmb(){S.embRequested=true;saveS();renderEmb();toast(t('embReqToast'));}
+
+/* packaging deviation reporting (instruction 3.6 — replaces e-mail to logistics@) */
+let pkSel=null,pkN=1,pkPhoto=false;
+function pkPick(k){pkSel=(pkSel===k?null:k);pkN=1;pkPhoto=false;renderPkDetail();}
+function renderPkDetail(){
+  ['pkDirty','pkBroken','pkShort'].forEach(k=>{const el=document.getElementById('pk-'+k);if(el)el.classList.toggle('sel',pkSel===k);});
+  const d=document.getElementById('pkDetail'),b=document.getElementById('pkBtn');
+  if(!d||!b)return;
+  if(!pkSel){d.innerHTML='';b.disabled=true;return;}
+  if(pkSel==='pkDirty'){
+    d.innerHTML='<p class="hint" style="margin-top:8px">'+t('pkDirtyHint')+'</p>'+
+      '<div class="photobox" style="padding:18px" onclick="pkTakePhoto()">'+
+      (pkPhoto?'<div class="em">✅</div><p>'+t('pkPhotoDone')+'</p>':'<div class="em">📷</div><p>'+t('pkPhotoBtn')+'</p>')+'</div>';
+    b.disabled=!pkPhoto;
+  }else{
+    d.innerHTML='<p class="hint" style="margin-top:8px">'+t(pkSel+'Hint')+'</p>'+
+      '<div class="steprow"><label><span>'+t('pkCount')+'</span></label>'+
+      '<div class="ctrls"><button onclick="pkAdj(-1)">−</button><div class="val">'+pkN+'</div><button onclick="pkAdj(1)">+</button></div></div>';
+    b.disabled=false;
+  }}
+function pkTakePhoto(){pkPhoto=true;renderPkDetail();}
+function pkAdj(d){pkN=Math.max(0,pkN+d);renderPkDetail();}
+function pkSubmit(){
+  S.exc.push({grower:'Kwekerij De Vries',dev:pkSel,kind:'pack',n:pkSel==='pkDirty'?null:pkN});
+  saveS();pkSel=null;pkPhoto=false;renderPkDetail();renderAll();toast(t('pkToast'));}
+
+/* ================= dispatch (D1/D2/D3/D8) ================= */
+const CARRIERS=[{name:'Van Dijk Transport',region:'NL'},{name:'Breux Logistics',region:'BE/DE'}];
+function excList(){
+  const out=[];
+  S.ann.forEach(a=>{if(!a.photo)out.push({t:t('exNoPhoto'),s:a.grower+' · '+t(a.product)+' · '+dayName(a.day),k:'photo'});});
+  S.ann.forEach(a=>{if(a.status==='announced'&&a.day===1&&!a.mine)out.push({t:t('exNoReady'),s:a.grower+' · '+volTxt(a),k:'ready'});});
+  S.exc.forEach(e=>out.push({t:t(e.kind==='pack'?'exPack':'exDev'),s:e.grower+' · '+t(e.dev)+(e.n!=null?' · '+e.n+' '+t('pkPieces'):''),k:'dev'}));
+  return out;}
+function renderDispatch(){
+  const el=document.getElementById('s-dhome');
+  const anns=S.ann,pal=anns.reduce((s,a)=>s+a.pallets,0),exc=excList();
+  let h='<h2>'+t('dTitle')+' — '+dayName(0)+'</h2><p class="hint">'+t('dHint')+'</p>';
+  h+='<div class="kpis"><div class="kpi"><b>'+anns.length+'</b><span>'+t('dAnn')+'</span></div>'+
+     '<div class="kpi"><b>'+pal+'</b><span>'+t('dPallets')+'</span></div>'+
+     '<div class="kpi'+(exc.length?' warn':'')+'"><b>'+exc.length+'</b><span>'+t('dExc')+'</span></div></div>';
+  h+='<div class="rule" style="background:var(--green-light);border-color:var(--green);color:#1B5E20">'+T[L].dCutoff(anns.length)+'</div>';
+  if(exc.length){h+='<div class="sechead">'+t('dExcHead')+'</div>';
+    h+=exc.map(e=>'<div class="exc"><b>⚠️ '+e.t+'</b><small>'+e.s+'</small></div>').join('');}
+  h+='<div class="sechead">'+t('dBoardHead')+'</div>';
+  CARRIERS.forEach((c,ri)=>{
+    const stops=anns.filter(a=>a.route===ri);if(!stops.length)return;
+    h+='<div class="routehead">🚛 '+c.name+' <span>'+c.region+' · '+stops.length+' stops</span></div>';
+    h+=stops.map(a=>'<div class="stoprow"><span class="em">'+EMO[a.product]+'</span>'+
+      '<div class="who"><b>'+a.grower+'</b><small>'+t(a.product)+' · '+volTxt(a)+' · '+dayName(a.day)+'</small>'+
+      '<span class="po">'+T[L].poLine(a.po)+'</span></div>'+stChip(a.status)+'</div>').join('');});
+  h+='<p class="note">'+t('demoNote')+'</p>';
+  el.innerHTML=h;}
+
+/* ================= driver (C1-C4) ================= */
+const stopUi={};
+function renderDriver(){
+  const el=document.getElementById('s-chome');
+  const stops=S.ann.filter(a=>a.route===0);
+  const pal=stops.reduce((s,a)=>s+a.pallets,0);
+  let h='<h2>'+t('cTitle')+' — '+dayName(1)+'</h2><p class="hint">'+T[L].cStopCount(stops.length,pal)+'</p>';
+  h+=stops.map((a,i)=>'<div class="stoprow tappable" onclick="openStop(\''+a.id+'\')">'+
+    '<span class="em" style="font-size:15px;font-weight:800;color:var(--grey)">'+(i+1)+'</span>'+
+    '<div class="who"><b>'+a.grower+'</b><small>'+a.addr+'</small>'+
+    '<small>'+EMO[a.product]+' '+t(a.product)+' · '+t('cExpected').toLowerCase()+': '+volTxt(a)+'</small></div>'+
+    stChip(a.status)+'</div>').join('');
+  h+='<p class="note">'+t('cHint')+'</p>';
+  el.innerHTML=h;}
+function openStop(id){
+  const a=S.ann.find(x=>x.id===id);if(!a)return;
+  const ui=stopUi[id]||(stopUi[id]={labels:false,spot:false});
+  const el=document.getElementById('s-cstop');
+  let h='<h2>'+a.grower+'</h2><p class="hint">'+a.addr+' · '+t('cContact')+': '+a.tel+'</p>';
+  h+='<div class="summary">'+
+     row(t('sumProduct'),EMO[a.product]+' '+t(a.product))+
+     row(t('cExpected'),T[L].volFmt(a.pallets,a.drums,a.pallets*4+a.drums))+
+     row(t('sumDay'),dayName(a.day))+
+     row('Status',t('st'+a.status[0].toUpperCase()+a.status.slice(1)))+'</div>';
+  if(a.status!=='loaded'){
+    h+='<div class="sechead">'+t('cConfirmHead')+'</div>';
+    h+='<div class="check'+(ui.labels?' sel':'')+'" onclick="stopToggle(\''+id+'\',\'labels\')"><div class="box">✓</div><div>'+t('cLabels')+'</div></div>';
+    h+='<div class="check'+(ui.spot?' sel':'')+'" onclick="stopToggle(\''+id+'\',\'spot\')"><div class="box">✓</div><div>'+t('cSpot')+'</div></div>';
+    h+='<div class="sechead">'+t('cDevHead')+'</div><div class="devgrid">'+
+      ['devNotReady','devNobody','devTruckFull','devQuality'].map(d=>'<div class="devbtn" onclick="flagDev(\''+id+'\',\''+d+'\')">'+t(d)+'</div>').join('')+'</div>';
+    h+='<button class="btn green" '+(ui.labels?'':'disabled')+' onclick="confirmLoaded(\''+id+'\')">'+t('cLoaded')+'</button>';
+  }else{
+    h+='<div class="rule" style="background:var(--green-light);border-color:var(--green);color:#1B5E20">'+t('cLoadedToast')+'</div>';
+  }
+  h+='<button class="btn ghost" onclick="renderDriver();go(\'s-chome\')">'+t('back')+'</button>';
+  el.innerHTML=h;go('s-cstop');}
+function stopToggle(id,k){stopUi[id][k]=!stopUi[id][k];openStop(id);}
+function confirmLoaded(id){const a=S.ann.find(x=>x.id===id);if(!a)return;
+  a.status='loaded';saveS();renderAll();openStop(id);toast(t('cLoadedToast'));}
+function flagDev(id,dev){const a=S.ann.find(x=>x.id===id);if(!a)return;
+  if(!S.exc.find(e=>e.id===id&&e.dev===dev))S.exc.push({id,grower:a.grower,dev});
+  saveS();renderAll();toast(t('devToast'));}
+
+/* ================= render & init ================= */
+function renderAll(){
+  const open=S.ann.filter(a=>a.mine&&a.status==='announced').length;
+  const b=document.getElementById('readyBadge');
+  b.textContent=open?open+' open':'✓';b.className='badge'+(open?'':' green');
+  renderDispatch();renderDriver();
+  if(document.getElementById('s-ready').classList.contains('active'))renderReady();
+  if(document.getElementById('s-hist').classList.contains('active'))renderHist();
+  if(document.getElementById('s-emb').classList.contains('active'))renderEmb();}
+function applyLang(){
+  document.documentElement.lang=L;document.title=t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});
+  document.getElementById('langBtn').textContent=L==='nl'?'EN':'NL';
+  document.getElementById('harvestLabel').textContent=t(state.harvest);
+  document.getElementById('roleSub').textContent=t(ROLE==='grower'?'subGrower':ROLE==='dispatch'?'subDispatch':'subDriver');
+  renderDays();renderAll();}
+
+loadS();
+applyLang();
+setRole(ROLE);
+
+/* ================= PWA ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>
