@@ -181,7 +181,7 @@ function renderAdmin(){
 
   h+='<div class="card"><h2>👩‍🌾 Telers & ophaaldagen</h2>';
   ADM.growers.forEach(g=>{
-    h+='<details><summary>'+esc(g.name)+' <span class="muted">'+g.locations.length+' locatie'+(g.locations.length===1?'':'s')+'</span></summary>';
+    h+='<details open><summary>'+esc(g.name)+' <span class="muted">'+g.locations.length+' locatie'+(g.locations.length===1?'':'s')+'</span></summary>';
     h+='<div class="muted" style="margin:6px 0">'+esc(g.contact||'')+(g.phone?' · '+esc(g.phone):'')+'</div>';
     h+='<div class="linkbox">Portaallink: '+location.origin+location.pathname+'?t='+g.token+'</div>'
       +'<button class="btn sub" onclick="copyLink(\''+g.token+'\')">📋 Kopieer link voor teler</button>';
