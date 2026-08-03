@@ -376,6 +376,7 @@ async function submitAnn(){
     }
     sel={loc:sel.loc,prod:null,pallets:2,date:null,editing:null,note:'',success:{upd:wasEdit,text:txt}};
     await loadGrower();
+    try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){}
   }catch(e){const f=el('ferr');f.textContent=e.message;f.style.display='block';el('sub').disabled=false;}
 }
 async function truck(id){
@@ -432,7 +433,7 @@ function renderAdmin(){
       const c=cap(r), pct=Math.min(100,Math.round(tot/c*100));
       const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{const k=pname(a);pm[k]=(pm[k]||0)+a.pallets});
       const prodSum=Object.entries(pm).map(([p,n])=>n+' '+p).join(' · ');
-      h+='<div class="route"><div class="rhead"><b>🚚 '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
+      h+='<div class="route"><div class="rhead"><b>🚚  '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
         +'<div class="fill"><i class="'+(tot>c?'over':'')+'" style="width:'+pct+'%"></i></div>'
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
         +on.map(a=>annCard(a,d)).join('')
@@ -513,7 +514,7 @@ function annCard(a,d){
     +'<div class="sub2">'+plt(a.pallets)+' '+esc(pname(a))+' · '+esc(a.location)+(a.note?' · “'+esc(a.note)+'”':'')+'</div></div>'
     +'<span class="badge '+st[1]+'">'+st[0]+'</span></div>';
   let acts='';
-  if(a.status==='announced')acts+='<button class="btn tiny" onclick="setSt(\''+a.id+'\',\'picked_up\')">'+t('picked_btn')+'</button>';
+  if(a.status==='announced'&&a.pickup_date<=todayStr())acts+='<button class="btn tiny" onclick="setSt(\''+a.id+'\',\'picked_up\')">'+t('picked_btn')+'</button>';
   if(!cancelled&&d){
     if(a.route_id)acts+='<button class="btn tiny sub" onclick="assign(\''+a.id+'\',null)">'+t('unassign')+'</button>';
     else{
@@ -631,6 +632,7 @@ else if(G_TOKEN)loadGrower();
 else showLinkEntry();
 function idleRefresh(){
   if(document.hidden)return;
+  if(pend)return;
   const ae=document.activeElement;
   if(ae&&['TEXTAREA','INPUT','SELECT'].includes(ae.tagName))return;
   if(G_TOKEN){if(!sel.editing&&!sel.prod&&!sel.date)loadGrower()}
