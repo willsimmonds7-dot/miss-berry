@@ -25,6 +25,8 @@ header .wrap{padding:0 14px;display:flex;align-items:center;justify-content:spac
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:14px}
 h2{font-size:16px;margin-bottom:10px;color:var(--berry-d)}
 h3{font-size:14px;margin:14px 0 6px}
+.dayhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 6px}
+.dayhead h3{margin:0}
 .lbl{font-size:13px;color:var(--grey);margin:12px 0 6px;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:9px 15px;font-size:15px;cursor:pointer;transition:.12s}
@@ -325,7 +327,7 @@ function renderAdmin(){
   h+='<div class="card"><h2>'+t('planner_h')+'</h2>';
   if(!days.length)h+='<div class="muted">'+t('no_plan')+'</div>';
   days.forEach(d=>{
-    h+='<h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3>';
+    h+='<div class="dayhead"><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
     ADM.routes.filter(r=>r.date===d).forEach(r=>{
       const on=upc.filter(a=>a.route_id===r.id);
       const tot=on.filter(a=>a.status!=='cancelled').reduce((s,a)=>s+a.pallets,0);
@@ -341,7 +343,6 @@ function renderAdmin(){
     });
     const un=upc.filter(a=>a.pickup_date===d&&!a.route_id);
     if(un.length)h+='<div class="pool"><b>'+t('pool')+' ('+un.length+')</b>'+un.map(a=>annCard(a,d)).join('')+'</div>';
-    h+='<div style="margin-top:8px"><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
   });
   if(past.length){
     h+='<details style="margin-top:12px"><summary>'+t('past_ann')+' ('+past.length+')</summary>';
