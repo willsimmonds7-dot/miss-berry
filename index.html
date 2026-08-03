@@ -29,6 +29,8 @@ h3{font-size:14px;margin:14px 0 6px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:9px 15px;font-size:15px;cursor:pointer;transition:.12s}
 .chip.sel{background:var(--berry);border-color:var(--berry);color:#fff;font-weight:600}
+.wdrow{flex-wrap:nowrap;gap:5px}
+.wdrow .chip{flex:1;min-width:0;padding:8px 0;font-size:13px;text-align:center}
 .step{display:flex;align-items:center;gap:14px;margin-top:4px}
 .step button{width:46px;height:46px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:22px;cursor:pointer}
 .step .n{font-size:26px;font-weight:800;min-width:56px;text-align:center}
@@ -362,7 +364,7 @@ function renderAdmin(){
       h+='<h3>'+esc(l.name)+'</h3><div class="muted">'+esc(l.address||'')+'</div><div>';
       l.pickup_dates.filter(d=>d.active).forEach(d=>{h+='<span class="dt">'+fmtD(d.date)+'<button onclick="rmDate(\''+l.id+'\',\''+d.date+'\')">✕</button></span>';});
       h+='</div><div class="muted" style="margin-top:8px">'+t('fixed_days')+'</div>'
-        +'<div class="chips" style="margin-top:4px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((l.weekly_days||[]).includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div>'
+        +'<div class="chips wdrow" style="margin-top:4px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((l.weekly_days||[]).includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div>'
         +'<div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
         +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>';
     });
