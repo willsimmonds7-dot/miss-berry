@@ -471,7 +471,7 @@ async function useLink(){
   const v=el('lnk').value.trim(); if(!v)return;
   let t=null,a=null;
   try{const u=new URL(v); t=u.searchParams.get('t'); a=u.searchParams.get('admin');}catch(e){}
-  if(!t&&!a&&/^[0-9a-f]{64}$/i.test(v)){
+  if(!t&&!a&&/^([0-9a-f]{64}|[A-Za-z0-9]{8,12})$/.test(v)){
     try{await rpc('grower_context',{p_token:v}); t=v;}
     catch(e){ try{await rpc('admin_overview',{p_token:v}); a=v;}catch(e2){} }
   }
