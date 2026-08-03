@@ -76,6 +76,8 @@ details{border-top:1px solid var(--line);padding:10px 2px}
 details summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
 details summary::after{content:"▾";color:var(--grey)}
 details[open] summary::after{content:"▴"}
+.subbox{background:#faf7f8;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}
+.sublbl{font-weight:600;font-size:14px}
 @media(min-width:700px){.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}}
 </style>
 </head>
@@ -121,7 +123,7 @@ nl:{
   new_route:'+ Nieuwe route', pool:'📥 Nog niet ingedeeld', past_ann:'Eerdere aanmeldingen',
   settings_h:'⚙️ Instellingen', save:'Opslaan', cap_hint:'Standaard vrachtwagencapaciteit (pallets). Per route aan te passen.',
   growers_h:'👩‍🌾 Telers & ophaaldagen', loc_one:'locatie', loc_many:'locaties', portal_link:'Portaallink', copy_link:'📋 Kopieer link voor teler',
-  add_day:'+ Ophaaldag', fixed_days:'🔁 Vaste ophaaldag — elke week:', toast_weekly:'Vaste ophaaldagen bijgewerkt', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
+  add_day:'+ Datum toevoegen', fixed_days:'🔁 Vaste ophaaldagen — elke week', fixed_hint:'Klik een dag aan of uit. Wordt direct opgeslagen.', extra_days:'📅 Losse extra datums', extra_hint:'Eenmalige ophaaldagen, naast het vaste weekschema.', no_extra:'Geen losse datums gepland.', upcoming:'Eerstvolgende ophaaldagen:', toast_weekly:'Vaste ophaaldagen bijgewerkt', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
   b_alert:'🚚 melding', b_changed:'✏️ gewijzigd', b_cancelled_by:'geannuleerd door teler',
   picked_btn:'✓ Opgehaald', unassign:'↩︎ uit route', to_route:'→ route', ok_seen:'OK, gezien',
   p_route_name:'Naam route (bv. Route Limburg):', p_route_name2:'Naam route:', p_carrier:'Vervoerder (optioneel):', p_cap:'Capaciteit in pallets:',
@@ -165,7 +167,7 @@ en:{
   new_route:'+ New route', pool:'📥 Not yet assigned', past_ann:'Past announcements',
   settings_h:'⚙️ Settings', save:'Save', cap_hint:'Default truck capacity (pallets). Adjustable per route.',
   growers_h:'👩‍🌾 Growers & pickup days', loc_one:'location', loc_many:'locations', portal_link:'Portal link', copy_link:'📋 Copy link for grower',
-  add_day:'+ Pickup day', fixed_days:'🔁 Fixed pickup day — every week:', toast_weekly:'Weekly pickup days updated', add_loc:'+ Add location', new_grower:'+ New grower',
+  add_day:'+ Add date', fixed_days:'🔁 Weekly pickup days — every week', fixed_hint:'Click a day on or off. Saved instantly.', extra_days:'📅 One-off extra dates', extra_hint:'Single pickup dates, on top of the weekly schedule.', no_extra:'No one-off dates planned.', upcoming:'Next pickup days:', toast_weekly:'Weekly pickup days updated', add_loc:'+ Add location', new_grower:'+ New grower',
   b_alert:'🚚 alert', b_changed:'✏️ changed', b_cancelled_by:'cancelled by grower',
   picked_btn:'✓ Picked up', unassign:'↩︎ remove from route', to_route:'→ route', ok_seen:'OK, seen',
   p_route_name:'Route name (e.g. Route Limburg):', p_route_name2:'Route name:', p_carrier:'Carrier (optional):', p_cap:'Capacity in pallets:',
@@ -412,12 +414,19 @@ function renderAdmin(){
     h+='<div class="linkbox">'+t('portal_link')+': '+location.origin+location.pathname+'?t='+g.token+'</div>'
       +'<button class="btn sub" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>';
     g.locations.forEach(l=>{
-      h+='<h3>'+esc(l.name)+'</h3><div class="muted">'+esc(l.address||'')+'</div><div>';
-      l.pickup_dates.filter(d=>d.active).forEach(d=>{h+='<span class="dt">'+fmtD(d.date)+'<button onclick="rmDate(\''+l.id+'\',\''+d.date+'\')">✕</button></span>';});
-      h+='</div><div class="muted" style="margin-top:8px">'+t('fixed_days')+'</div>'
-        +'<div class="chips wdrow" style="margin-top:4px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((l.weekly_days||[]).includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div>'
-        +'<div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
-        +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>';
+      h+='<h3>'+esc(l.name)+'</h3><div class="muted">'+esc(l.address||'')+'</div>';
+      h+='<div class="subbox"><div class="sublbl">'+t('fixed_days')+'</div>'
+        +'<div class="chips wdrow" style="margin-top:6px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((l.weekly_days||[]).includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div>'
+        +'<div class="muted" style="margin-top:6px">'+t('fixed_hint')+'</div></div>';
+      const ex=l.pickup_dates.filter(d=>d.active);
+      h+='<div class="subbox"><div class="sublbl">'+t('extra_days')+'</div><div style="margin-top:6px">';
+      if(ex.length)ex.forEach(d=>{h+='<span class="dt">'+fmtD(d.date)+'<button onclick="rmDate(\''+l.id+'\',\''+d.date+'\')">✕</button></span>';});
+      else h+='<span class="muted">'+t('no_extra')+'</span>';
+      h+='</div><div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
+        +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>'
+        +'<div class="muted" style="margin-top:6px">'+t('extra_hint')+'</div></div>';
+      const up=expandDates({pickup_dates:ex.map(d=>d.date),weekly_days:l.weekly_days||[]}).filter(x=>x>=todayStr()).slice(0,4);
+      if(up.length)h+='<div class="muted" style="margin:8px 0 2px">'+t('upcoming')+' '+up.map(fmtD).join(' · ')+'</div>';
     });
     if(lForm===g.id){
       h+='<div class="route" style="margin-top:10px"><div class="grid2">'
@@ -510,7 +519,8 @@ async function toggleWD(lid,d){
   const loc=ADM.growers.flatMap(g=>g.locations).find(x=>x.id===lid);
   const cur=(loc&&loc.weekly_days)||[];
   const ds=cur.includes(d)?cur.filter(x=>x!==d):[...cur,d];
-  try{await rpc('admin_set_weekly_days',{p_token:A_TOKEN,p_location:lid,p_days:ds});toast(t('toast_weekly'));await loadAdmin();}catch(e){toast(e.message)}
+  if(loc){loc.weekly_days=ds;renderAdmin();}
+  try{await rpc('admin_set_weekly_days',{p_token:A_TOKEN,p_location:lid,p_days:ds});toast(t('toast_weekly'));}catch(e){toast(e.message);await loadAdmin();}
 }
 async function rmDate(lid,d){
   const ds=dset(lid).filter(x=>x!==d);
