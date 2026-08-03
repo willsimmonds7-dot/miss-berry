@@ -134,7 +134,12 @@ nl:{
   p_loc_name:'Naam locatie:', toast_loc:'Locatie toegevoegd',
   toast_copy:'Link gekopieerd — stuur via WhatsApp', p_copy:'Kopieer deze link:',
   link_msg:'Geen toegangslink. Open de persoonlijke link die je van Miss Berry hebt gekregen — of plak hem hieronder.',
-  link_ph:'Plak hier je link of code', open_btn:'Openen', link_err:'Geen geldige link of code herkend.'
+  link_ph:'Plak hier je link of code', open_btn:'Openen', link_err:'Geen geldige link of code herkend.',
+  same_again:'Zelfde als vorige keer', today_lbl:'Vandaag', tomorrow:'Morgen', this_pre:'Deze', next_pre:'Volgende',
+  succ_h:'Aangemeld!', succ_upd_h:'Wijziging opgeslagen', succ_sub:'Miss Berry plant het transport. Je ziet de status hieronder bij je aanmeldingen.', succ_new:'+ Nieuwe aanmelding',
+  f_route_name:'Naam route (bv. Route Limburg)', f_carrier:'Vervoerder (optioneel)', f_cap:'Capaciteit (pallets)',
+  f_gname:'Naam teler (bedrijfsnaam)', f_contact:'Contactpersoon (optioneel)', f_phone:'Telefoon (optioneel)',
+  f_lname:'Naam locatie', f_addr:'Adres (optioneel)', name_req:'Naam is verplicht'
 },
 en:{
   invalid_token:'This link is no longer valid. Please contact Miss Berry.',
@@ -173,7 +178,12 @@ en:{
   p_loc_name:'Location name:', toast_loc:'Location added',
   toast_copy:'Link copied — send via WhatsApp', p_copy:'Copy this link:',
   link_msg:'No access link. Open the personal link you received from Miss Berry — or paste it below.',
-  link_ph:'Paste your link or code here', open_btn:'Open', link_err:'No valid link or code recognised.'
+  link_ph:'Paste your link or code here', open_btn:'Open', link_err:'No valid link or code recognised.',
+  same_again:'Same as last time', today_lbl:'Today', tomorrow:'Tomorrow', this_pre:'This', next_pre:'Next',
+  succ_h:'Announced!', succ_upd_h:'Changes saved', succ_sub:'Miss Berry will plan the transport. You can follow the status below in your announcements.', succ_new:'+ New announcement',
+  f_route_name:'Route name (e.g. Route Limburg)', f_carrier:'Carrier (optional)', f_cap:'Capacity (pallets)',
+  f_gname:'Grower name (company)', f_contact:'Contact person (optional)', f_phone:'Phone (optional)',
+  f_lname:'Location name', f_addr:'Address (optional)', name_req:'Name is required'
 }};
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.nl[k]||k}
 function pname(o){return LANG==='en'?(o.product_en||o.product_nl):o.product_nl}
@@ -211,7 +221,19 @@ async function loadGrower(){
   renderGrower();
 }
 const WD={nl:['ma','di','wo','do','vr','za','zo'],en:['Mo','Tu','We','Th','Fr','Sa','Su']};
+const WDF={nl:['maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag','zondag'],en:['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']};
 function wdN(d){return (WD[LANG]||WD.nl)[d-1]}
+function fmtFriendly(d){
+  const dt=new Date(d+'T12:00:00'), now=new Date(todayStr()+'T12:00:00');
+  const diff=Math.round((dt-now)/86400000);
+  const wd=(WDF[LANG]||WDF.nl)[(dt.getDay()===0?7:dt.getDay())-1];
+  const dm=dt.toLocaleDateString(LANG==='en'?'en-GB':'nl-NL',{day:'numeric',month:'short'});
+  if(diff===0)return t('today_lbl')+' ('+dm+')';
+  if(diff===1)return t('tomorrow')+' ('+dm+')';
+  if(diff>1&&diff<7)return t('this_pre')+' '+wd+' ('+dm+')';
+  if(diff>=7&&diff<14)return t('next_pre')+' '+wd+' ('+dm+')';
+  return fmtD(d);
+}
 function ymd(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
 function expandDates(loc){
   if(!loc)return[];
@@ -234,20 +256,34 @@ function renderGrower(){
   let dates=all.slice(0,2);
   if(sel.date&&all.includes(sel.date)&&!dates.includes(sel.date))dates=[...dates,sel.date];
   if(sel.date&&!dates.includes(sel.date))sel.date=null;
-  let h='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
+  let h='';
+  if(sel.success){
+    const s=sel.success;
+    h+='<div class="card" style="text-align:center;padding:30px 16px"><div style="font-size:48px">'+(s.upd?'✏️':'✅')+'</div>'
+      +'<h2 style="margin-top:10px;font-size:20px;color:var(--ok)">'+(s.upd?t('succ_upd_h'):t('succ_h'))+'</h2>'
+      +'<p style="margin-top:6px;font-weight:700">'+esc(s.text)+'</p>'
+      +'<p class="muted" style="margin-top:8px">'+t('succ_sub')+'</p>'
+      +'<button class="btn" onclick="newAnn()">'+t('succ_new')+'</button></div>';
+  }else{
+  h+='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
+  const last=sel.editing?null:[...A].filter(a=>a.status!=='cancelled').sort((x,y)=>String(y.created_at||'').localeCompare(String(x.created_at||'')))[0];
+  if(last&&L.find(l=>l.id===last.location_id)&&P.find(p=>p.id===last.product_id)){
+    h+='<button class="chip" style="width:100%;text-align:left;margin-bottom:2px" onclick="sameAgain()">🔁 '+t('same_again')+': <b>'+last.pallets+' '+t('pallets')+' '+esc(pname(last))+(L.length>1?' · '+esc(last.location):'')+'</b></button>';
+  }
   if(L.length>1&&!sel.editing){h+='<div class="lbl">'+t('location')+'</div><div class="chips">'+
     L.map(l=>'<button class="chip'+(sel.loc===l.id?' sel':'')+'" onclick="pick(\'loc\',\''+l.id+'\')">'+esc(l.name)+'</button>').join('')+'</div>';}
   h+='<div class="lbl">'+t('product')+'</div><div class="chips">'+
     P.map(p=>'<button class="chip'+(sel.prod===p.id?' sel':'')+'" onclick="pick(\'prod\',\''+p.id+'\')">'+esc(LANG==='en'?p.name_en:p.name_nl)+'</button>').join('')+'</div>';
   h+='<div class="lbl">'+t('pallets_n')+'</div><div class="step"><button onclick="adj(-1)">−</button><span class="n">'+sel.pallets+'</span><button onclick="adj(1)">+</button><small>'+t('pallets')+'</small></div>';
   h+='<div class="lbl">'+t('pickup_day')+'</div>';
-  h+=dates.length?'<div class="chips">'+dates.map(d=>'<button class="chip'+(sel.date===d?' sel':'')+'" onclick="pick(\'date\',\''+d+'\')">'+fmtD(d)+'</button>').join('')+'</div>'
+  h+=dates.length?'<div class="chips">'+dates.map(d=>'<button class="chip'+(sel.date===d?' sel':'')+'" onclick="pick(\'date\',\''+d+'\')">'+fmtFriendly(d)+'</button>').join('')+'</div>'
     :'<div class="muted">'+(loc?t('no_days'):t('pick_loc'))+'</div>';
   h+='<div class="lbl">'+t('note_lbl')+'</div><textarea id="note" rows="1" placeholder="'+t('note_ph')+'">'+esc(sel.note||'')+'</textarea>';
   const ready=sel.loc&&sel.prod&&sel.date&&sel.pallets>0;
   h+='<button class="btn" id="sub" '+(ready?'':'disabled')+' onclick="submitAnn()">'+(sel.editing?t('save_change'):t('submit'))+'</button>';
   if(sel.editing)h+='<button class="btn sub" onclick="stopEdit()">'+t('no_edit')+'</button>';
   h+='<div class="err" id="ferr"></div></div>';
+  }
 
   h+='<div class="card"><h2>'+t('my_ann')+'</h2>';
   if(!A.length)h+='<div class="muted">'+t('no_ann')+'</div>';
@@ -273,6 +309,15 @@ function editAnn(id){
   renderGrower();window.scrollTo({top:0,behavior:'smooth'});
 }
 function stopEdit(){sel={loc:CTX.locations.length===1?CTX.locations[0].id:null,prod:null,pallets:2,date:null,editing:null,note:''};renderGrower()}
+function newAnn(){stopEdit()}
+function sameAgain(){
+  const last=[...CTX.announcements].filter(a=>a.status!=='cancelled').sort((x,y)=>String(y.created_at||'').localeCompare(String(x.created_at||'')))[0];
+  if(!last)return;
+  const loc=CTX.locations.find(l=>l.id===last.location_id);
+  const d=expandDates(loc).filter(x=>x>=todayStr())[0]||null;
+  sel={loc:last.location_id,prod:last.product_id,pallets:last.pallets,date:d,editing:null,note:''};
+  renderGrower();
+}
 async function cancelAnnG(id){
   if(!confirm(t('confirm_cancel')))return;
   try{await rpc('cancel_announcement',{p_token:G_TOKEN,p_announcement:id});
@@ -284,14 +329,15 @@ async function cancelAnnG(id){
 async function submitAnn(){
   el('sub').disabled=true;
   try{
-    if(sel.editing){
+    const wasEdit=!!sel.editing;
+    const loc=CTX.locations.find(l=>l.id===sel.loc), pr=CTX.products.find(p=>p.id===sel.prod);
+    const txt=sel.pallets+' '+t('pallets')+' '+(pr?(LANG==='en'?pr.name_en:pr.name_nl):'')+' · '+(loc?loc.name:'')+' · '+fmtFriendly(sel.date);
+    if(wasEdit){
       await rpc('update_announcement',{p_token:G_TOKEN,p_announcement:sel.editing,p_pallets:sel.pallets,p_pickup_date:sel.date,p_product:sel.prod,p_note:el('note').value});
-      toast(t('toast_updated'));
     }else{
       await rpc('create_announcement',{p_token:G_TOKEN,p_location:sel.loc,p_product:sel.prod,p_pallets:sel.pallets,p_pickup_date:sel.date,p_note:el('note').value});
-      toast(t('toast_created'));
     }
-    sel={loc:sel.loc,prod:null,pallets:2,date:null,editing:null,note:''};
+    sel={loc:sel.loc,prod:null,pallets:2,date:null,editing:null,note:'',success:{upd:wasEdit,text:txt}};
     await loadGrower();
   }catch(e){const f=el('ferr');f.textContent=e.message;f.style.display='block';el('sub').disabled=false;}
 }
@@ -302,7 +348,7 @@ async function truck(id){
 }
 
 /* ---------- ADMIN (Manon) ---------- */
-let ADM=null, newDates={};
+let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null;
 async function loadAdmin(){
   try{ADM=await rpc('admin_overview',{p_token:A_TOKEN});}catch(e){return fail(e.message)}
   ADM.settings=ADM.settings||{};ADM.routes=ADM.routes||[];
@@ -329,6 +375,7 @@ function renderAdmin(){
   days.forEach(d=>{
     h+='<div class="dayhead"><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
     ADM.routes.filter(r=>r.date===d).forEach(r=>{
+      if(rForm&&rForm.id===r.id){h+=routeFormHTML();return;}
       const on=upc.filter(a=>a.route_id===r.id);
       const tot=on.filter(a=>a.status!=='cancelled').reduce((s,a)=>s+a.pallets,0);
       const c=cap(r), pct=Math.min(100,Math.round(tot/c*100));
@@ -341,6 +388,7 @@ function renderAdmin(){
         +'<div class="acts"><button class="btn tiny sub" onclick="editRoute(\''+r.id+'\')">✏️</button>'
         +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">🗑</button></div></div>';
     });
+    if(rForm&&!rForm.id&&rForm.date===d)h+=routeFormHTML();
     const un=upc.filter(a=>a.pickup_date===d&&!a.route_id);
     if(un.length)h+='<div class="pool"><b>'+t('pool')+' ('+un.length+')</b>'+un.map(a=>annCard(a,d)).join('')+'</div>';
   });
@@ -371,9 +419,28 @@ function renderAdmin(){
         +'<div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
         +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>';
     });
-    h+='<div style="margin-top:10px"><button class="btn sub" onclick="addLoc(\''+g.id+'\')">'+t('add_loc')+'</button></div></details>';
+    if(lForm===g.id){
+      h+='<div class="route" style="margin-top:10px"><div class="grid2">'
+        +'<input type="text" id="lf-name" placeholder="'+t('f_lname')+'">'
+        +'<input type="text" id="lf-addr" placeholder="'+t('f_addr')+'"></div>'
+        +'<div class="acts"><button class="btn tiny" onclick="saveLoc(\''+g.id+'\')">'+t('save')+'</button>'
+        +'<button class="btn tiny sub" onclick="lForm=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div></details>';
+    }else{
+      h+='<div style="margin-top:10px"><button class="btn sub" onclick="addLoc(\''+g.id+'\')">'+t('add_loc')+'</button></div></details>';
+    }
   });
-  h+='<div style="margin-top:12px"><button class="btn sub" onclick="addGrower()">'+t('new_grower')+'</button></div></div>';
+  if(gForm){
+    h+='<div class="route" style="margin-top:12px">'
+      +'<div class="grid2"><input type="text" id="gf-name" placeholder="'+t('f_gname')+'">'
+      +'<input type="text" id="gf-contact" placeholder="'+t('f_contact')+'"></div>'
+      +'<div class="grid2" style="margin-top:8px"><input type="tel" id="gf-phone" placeholder="'+t('f_phone')+'">'
+      +'<input type="text" id="gf-loc" placeholder="'+t('f_lname')+'" value="'+t('p_first_loc_def')+'"></div>'
+      +'<div style="margin-top:8px"><input type="text" id="gf-addr" placeholder="'+t('f_addr')+'"></div>'
+      +'<div class="acts"><button class="btn tiny" onclick="saveGrower()">'+t('save')+'</button>'
+      +'<button class="btn tiny sub" onclick="gForm=false;renderAdmin()">'+t('cancel_btn')+'</button></div></div></div>';
+  }else{
+    h+='<div style="margin-top:12px"><button class="btn sub" onclick="addGrower()">'+t('new_grower')+'</button></div></div>';
+  }
   h+='</div>';
   el('app').innerHTML=h;
 }
@@ -404,18 +471,25 @@ function annCard(a,d){
 }
 async function assign(aid,rid){try{await rpc('admin_assign_route',{p_token:A_TOKEN,p_announcement:aid,p_route:rid});await loadAdmin();}catch(e){toast(e.message)}}
 async function clearFlag(aid){try{await rpc('admin_clear_change_flag',{p_token:A_TOKEN,p_announcement:aid});await loadAdmin();}catch(e){toast(e.message)}}
-async function newRoute(d){
-  const n=prompt(t('p_route_name'));if(!n)return;
-  const c=prompt(t('p_carrier'))||'';
-  const cp=prompt(t('p_cap'),ADM.settings.default_truck_capacity||'44');
-  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:null,p_date:d,p_name:n,p_carrier:c,p_capacity:cp?parseInt(cp,10):null});toast(t('toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}
+function routeFormHTML(){
+  const r=rForm.id?ADM.routes.find(x=>x.id===rForm.id):null;
+  return '<div class="route"><div class="grid2">'
+    +'<input type="text" id="rf-name" placeholder="'+t('f_route_name')+'" value="'+esc(r?r.name:'')+'">'
+    +'<input type="text" id="rf-carrier" placeholder="'+t('f_carrier')+'" value="'+esc(r&&r.carrier?r.carrier:'')+'">'
+    +'</div><div class="grid2" style="margin-top:8px">'
+    +'<input type="text" id="rf-cap" inputmode="numeric" placeholder="'+t('f_cap')+'" value="'+esc(r&&r.capacity?String(r.capacity):(ADM.settings.default_truck_capacity||'44'))+'"><div></div></div>'
+    +'<div class="acts"><button class="btn tiny" onclick="saveRoute()">'+t('save')+'</button>'
+    +'<button class="btn tiny sub" onclick="rForm=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
 }
-async function editRoute(id){
-  const r=ADM.routes.find(x=>x.id===id);if(!r)return;
-  const n=prompt(t('p_route_name2'),r.name);if(!n)return;
-  const c=prompt(t('p_carrier'),r.carrier||'')||'';
-  const cp=prompt(t('p_cap'),String(r.capacity||ADM.settings.default_truck_capacity||'44'));
-  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:id,p_date:r.date,p_name:n,p_carrier:c,p_capacity:cp?parseInt(cp,10):null});toast(t('toast_route_upd'));await loadAdmin();}catch(e){toast(e.message)}
+function newRoute(d){rForm={id:null,date:d};renderAdmin();const i=el('rf-name');if(i)i.focus()}
+function editRoute(id){const r=ADM.routes.find(x=>x.id===id);if(!r)return;rForm={id:id,date:r.date};renderAdmin();const i=el('rf-name');if(i)i.focus()}
+async function saveRoute(){
+  const n=el('rf-name').value.trim();if(!n)return toast(t('name_req'));
+  const c=el('rf-carrier').value.trim();
+  const cp=parseInt(el('rf-cap').value,10);
+  const f=rForm;
+  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:f.id,p_date:f.date,p_name:n,p_carrier:c,p_capacity:cp>0?cp:null});
+    rForm=null;toast(t(f.id?'toast_route_upd':'toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function delRoute(id){
   if(!confirm(t('confirm_del_route')))return;
@@ -444,19 +518,20 @@ async function rmDate(lid,d){
 }
 async function resolveExc(id){try{await rpc('admin_resolve_exception',{p_token:A_TOKEN,p_exception:id});toast(t('toast_exc'));await loadAdmin();}catch(e){toast(e.message)}}
 async function setSt(id,st){try{await rpc('admin_set_status',{p_token:A_TOKEN,p_announcement:id,p_status:st});await loadAdmin();}catch(e){toast(e.message)}}
-async function addGrower(){
-  const n=prompt(t('p_grower_name'));if(!n)return;
-  const c=prompt(t('p_contact'))||'';const p=prompt(t('p_phone'))||'';
-  try{const r=await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:null,p_name:n,p_contact:c,p_phone:p});
-    const ln=prompt(t('p_first_loc'),t('p_first_loc_def'));
-    if(ln)await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:prompt(t('p_addr'))||''});
-    toast(t('toast_grower'));await loadAdmin();
+function addGrower(){gForm=true;renderAdmin();const i=el('gf-name');if(i)i.focus()}
+async function saveGrower(){
+  const n=el('gf-name').value.trim();if(!n)return toast(t('name_req'));
+  try{const r=await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:null,p_name:n,p_contact:el('gf-contact').value.trim(),p_phone:el('gf-phone').value.trim()});
+    const ln=el('gf-loc').value.trim()||t('p_first_loc_def');
+    await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:el('gf-addr').value.trim()});
+    gForm=false;toast(t('toast_grower'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
-async function addLoc(gid){
-  const n=prompt(t('p_loc_name'));if(!n)return;
-  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:gid,p_name:n,p_address:prompt(t('p_addr'))||''});
-    toast(t('toast_loc'));await loadAdmin();
+function addLoc(gid){lForm=gid;renderAdmin();const i=el('lf-name');if(i)i.focus()}
+async function saveLoc(gid){
+  const n=el('lf-name').value.trim();if(!n)return toast(t('name_req'));
+  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:gid,p_name:n,p_address:el('lf-addr').value.trim()});
+    lForm=null;toast(t('toast_loc'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
 function copyLink(tok){
@@ -496,7 +571,7 @@ function idleRefresh(){
   const ae=document.activeElement;
   if(ae&&['TEXTAREA','INPUT','SELECT'].includes(ae.tagName))return;
   if(G_TOKEN){if(!sel.editing&&!sel.prod&&!sel.date)loadGrower()}
-  else if(A_TOKEN)loadAdmin();
+  else if(A_TOKEN){if(!rForm&&!gForm&&!lForm)loadAdmin()}
 }
 setInterval(idleRefresh,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleRefresh()});
