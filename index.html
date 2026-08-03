@@ -228,7 +228,9 @@ function expandDates(loc){
 function renderGrower(){
   const L=CTX.locations, P=CTX.products, A=CTX.announcements;
   const loc=L.find(l=>l.id===sel.loc);
-  const dates=expandDates(loc);
+  const all=expandDates(loc);
+  let dates=all.slice(0,2);
+  if(sel.date&&all.includes(sel.date)&&!dates.includes(sel.date))dates=[...dates,sel.date];
   if(sel.date&&!dates.includes(sel.date))sel.date=null;
   let h='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
   if(L.length>1&&!sel.editing){h+='<div class="lbl">'+t('location')+'</div><div class="chips">'+
