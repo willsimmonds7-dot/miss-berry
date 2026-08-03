@@ -76,7 +76,7 @@ details[open] summary::after{content:"▴"}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand">🍓 Miss Berry<small id="subT">Aanmeldportaal</small></div><div class="who" id="who"></div></div></header>
+<header><div class="wrap"><div class="brand">🍓 Miss Berry<small id="subT">Aanmeldportaal</small></div><div style="display:flex;align-items:center;gap:10px"><div class="who" id="who"></div><button id="langBtn" onclick="toggleLang()" style="background:none;border:1.5px solid rgba(255,255,255,.55);color:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer">EN</button></div></div></header>
 <div id="app" class="wrap"><div class="spin">Laden…</div></div>
 <div class="toast" id="toast"></div>
 <script>
@@ -91,23 +91,111 @@ try{
   else{const s=JSON.parse(localStorage.getItem('mb-access')||'null');
     if(s){if(s.role==='admin')A_TOKEN=s.token;else G_TOKEN=s.token;}}
 }catch(e){}
-const MSG={invalid_token:'Deze link is niet (meer) geldig. Neem contact op met Miss Berry.',
+let LANG='nl';try{LANG=localStorage.getItem('mb-lang')||'nl'}catch(e){}
+const I18N={
+nl:{
+  invalid_token:'Deze link is niet (meer) geldig. Neem contact op met Miss Berry.',
   invalid_pickup_date:'Deze ophaaldag is niet beschikbaar. Kies een andere dag.',
   invalid_location:'Ongeldige locatie.', alert_already_open:'Er staat al een melding open voor deze aanmelding.',
   not_editable:'Deze aanmelding kan niet meer worden gewijzigd. Bel of app Miss Berry.',
-  invalid_pallets:'Ongeldig aantal pallets.', invalid_route:'Deze route bestaat niet meer.'};
+  invalid_pallets:'Ongeldig aantal pallets.', invalid_route:'Deze route bestaat niet meer.', err_generic:'Fout',
+  portal_sub:'Aanmeldportaal', admin:'Beheer', week_planner:'Weekplanner',
+  announce_h:'Beschikbaarheid aanmelden', edit_h:'✏️ Aanmelding wijzigen',
+  location:'Locatie', product:'Product', pallets_n:'Aantal pallets', pallets:'pallets',
+  pickup_day:'Ophaaldag', no_days:'Nog geen ophaaldagen beschikbaar voor deze locatie. Miss Berry stelt deze in.', pick_loc:'Kies eerst een locatie.',
+  note_lbl:'Opmerking (optioneel)', note_ph:'Bijv. bijzonderheden over de partij',
+  save_change:'Wijziging opslaan', submit:'Aanmelden', no_edit:'Niet wijzigen',
+  my_ann:'Mijn aanmeldingen', no_ann:'Nog geen aanmeldingen.',
+  st_picked:'Opgehaald', st_cancelled:'Geannuleerd', st_announced:'Aangemeld',
+  pickup_pre:'ophalen', alert_sent_line:'🚚 Melding verstuurd — Miss Berry is op de hoogte', truck_btn:'🚚 Waar blijft mijn vrachtwagen?',
+  edit_btn:'✏️ Wijzigen', cancel_btn:'Annuleren', footer_g:'Vragen? Bel of app Miss Berry zoals je gewend bent.',
+  confirm_cancel:'Weet je zeker dat je deze aanmelding wilt annuleren?',
+  toast_cancelled:'Aanmelding geannuleerd — Miss Berry ziet dit direct.', toast_updated:'✏️ Gewijzigd — Miss Berry ziet dit direct.',
+  toast_created:'✅ Aangemeld! Miss Berry plant het transport.', toast_alert:'🚚 Melding verstuurd — Miss Berry zoekt het uit.',
+  alerts_h:'🚨 Meldingen', open:'open', no_alerts:'Geen open meldingen. 🎉', resolved_btn:'Opgelost',
+  planner_h:'📅 Weekplanner', no_plan:'Nog geen aanmeldingen of routes.', today:'vandaag',
+  new_route:'+ Nieuwe route', pool:'📥 Nog niet ingedeeld', past_ann:'Eerdere aanmeldingen',
+  settings_h:'⚙️ Instellingen', save:'Opslaan', cap_hint:'Standaard vrachtwagencapaciteit (pallets). Per route aan te passen.',
+  growers_h:'👩‍🌾 Telers & ophaaldagen', loc_one:'locatie', loc_many:'locaties', portal_link:'Portaallink', copy_link:'📋 Kopieer link voor teler',
+  add_day:'+ Ophaaldag', repeat_weekly:'🔁 8 weken wekelijks herhalen', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
+  b_alert:'🚚 melding', b_changed:'✏️ gewijzigd', b_cancelled_by:'geannuleerd door teler',
+  picked_btn:'✓ Opgehaald', unassign:'↩︎ uit route', to_route:'→ route', ok_seen:'OK, gezien',
+  p_route_name:'Naam route (bv. Route Limburg):', p_route_name2:'Naam route:', p_carrier:'Vervoerder (optioneel):', p_cap:'Capaciteit in pallets:',
+  toast_route_new:'Route aangemaakt', toast_route_upd:'Route bijgewerkt', toast_route_del:'Route verwijderd',
+  confirm_del_route:'Route verwijderen? Aanmeldingen komen terug bij "Nog niet ingedeeld".',
+  bad_cap:'Ongeldige capaciteit', toast_cap:'Capaciteit opgeslagen',
+  pick_date_first:'Kies eerst een datum', toast_day_add:'Ophaaldag toegevoegd', toast_days_add:'8 wekelijkse ophaaldagen toegevoegd', toast_day_rm:'Ophaaldag verwijderd', toast_exc:'Melding opgelost',
+  p_grower_name:'Naam teler (bedrijfsnaam):', p_contact:'Contactpersoon (optioneel):', p_phone:'Telefoon (optioneel):',
+  p_first_loc:'Naam eerste locatie:', p_first_loc_def:'Hoofdlocatie', p_addr:'Adres (optioneel):', toast_grower:'Teler toegevoegd',
+  p_loc_name:'Naam locatie:', toast_loc:'Locatie toegevoegd',
+  toast_copy:'Link gekopieerd — stuur via WhatsApp', p_copy:'Kopieer deze link:',
+  link_msg:'Geen toegangslink. Open de persoonlijke link die je van Miss Berry hebt gekregen — of plak hem hieronder.',
+  link_ph:'Plak hier je link of code', open_btn:'Openen', link_err:'Geen geldige link of code herkend.'
+},
+en:{
+  invalid_token:'This link is no longer valid. Please contact Miss Berry.',
+  invalid_pickup_date:'This pickup day is not available. Please choose another day.',
+  invalid_location:'Invalid location.', alert_already_open:'There is already an open alert for this announcement.',
+  not_editable:'This announcement can no longer be changed. Call or message Miss Berry.',
+  invalid_pallets:'Invalid number of pallets.', invalid_route:'This route no longer exists.', err_generic:'Error',
+  portal_sub:'Announcement portal', admin:'Admin', week_planner:'Week planner',
+  announce_h:'Announce availability', edit_h:'✏️ Edit announcement',
+  location:'Location', product:'Product', pallets_n:'Number of pallets', pallets:'pallets',
+  pickup_day:'Pickup day', no_days:'No pickup days available for this location yet. Miss Berry sets these.', pick_loc:'Choose a location first.',
+  note_lbl:'Note (optional)', note_ph:'E.g. details about the batch',
+  save_change:'Save changes', submit:'Submit', no_edit:'Discard changes',
+  my_ann:'My announcements', no_ann:'No announcements yet.',
+  st_picked:'Picked up', st_cancelled:'Cancelled', st_announced:'Announced',
+  pickup_pre:'pickup', alert_sent_line:'🚚 Alert sent — Miss Berry is aware', truck_btn:'🚚 Where is my truck?',
+  edit_btn:'✏️ Edit', cancel_btn:'Cancel', footer_g:'Questions? Call or message Miss Berry as usual.',
+  confirm_cancel:'Are you sure you want to cancel this announcement?',
+  toast_cancelled:'Announcement cancelled — Miss Berry sees this immediately.', toast_updated:'✏️ Updated — Miss Berry sees this immediately.',
+  toast_created:'✅ Announced! Miss Berry will plan the transport.', toast_alert:'🚚 Alert sent — Miss Berry is on it.',
+  alerts_h:'🚨 Alerts', open:'open', no_alerts:'No open alerts. 🎉', resolved_btn:'Resolved',
+  planner_h:'📅 Week planner', no_plan:'No announcements or routes yet.', today:'today',
+  new_route:'+ New route', pool:'📥 Not yet assigned', past_ann:'Past announcements',
+  settings_h:'⚙️ Settings', save:'Save', cap_hint:'Default truck capacity (pallets). Adjustable per route.',
+  growers_h:'👩‍🌾 Growers & pickup days', loc_one:'location', loc_many:'locations', portal_link:'Portal link', copy_link:'📋 Copy link for grower',
+  add_day:'+ Pickup day', repeat_weekly:'🔁 Repeat weekly for 8 weeks', add_loc:'+ Add location', new_grower:'+ New grower',
+  b_alert:'🚚 alert', b_changed:'✏️ changed', b_cancelled_by:'cancelled by grower',
+  picked_btn:'✓ Picked up', unassign:'↩︎ remove from route', to_route:'→ route', ok_seen:'OK, seen',
+  p_route_name:'Route name (e.g. Route Limburg):', p_route_name2:'Route name:', p_carrier:'Carrier (optional):', p_cap:'Capacity in pallets:',
+  toast_route_new:'Route created', toast_route_upd:'Route updated', toast_route_del:'Route deleted',
+  confirm_del_route:'Delete route? Announcements return to "Not yet assigned".',
+  bad_cap:'Invalid capacity', toast_cap:'Capacity saved',
+  pick_date_first:'Pick a date first', toast_day_add:'Pickup day added', toast_days_add:'8 weekly pickup days added', toast_day_rm:'Pickup day removed', toast_exc:'Alert resolved',
+  p_grower_name:'Grower name (company):', p_contact:'Contact person (optional):', p_phone:'Phone (optional):',
+  p_first_loc:'Name of first location:', p_first_loc_def:'Main location', p_addr:'Address (optional):', toast_grower:'Grower added',
+  p_loc_name:'Location name:', toast_loc:'Location added',
+  toast_copy:'Link copied — send via WhatsApp', p_copy:'Copy this link:',
+  link_msg:'No access link. Open the personal link you received from Miss Berry — or paste it below.',
+  link_ph:'Paste your link or code here', open_btn:'Open', link_err:'No valid link or code recognised.'
+}};
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.nl[k]||k}
+function pname(o){return LANG==='en'?(o.product_en||o.product_nl):o.product_nl}
+function toggleLang(){
+  LANG=LANG==='nl'?'en':'nl';
+  try{localStorage.setItem('mb-lang',LANG)}catch(e){}
+  applyLang();
+}
+function applyLang(){
+  el('langBtn').textContent=LANG==='nl'?'EN':'NL';
+  if(A_TOKEN&&ADM){el('who').textContent=t('admin');el('subT').textContent=t('week_planner');renderAdmin();}
+  else if(G_TOKEN&&CTX){el('subT').textContent=t('portal_sub');renderGrower();}
+  else if(!A_TOKEN&&!G_TOKEN){el('subT').textContent=t('portal_sub');showLinkEntry();}
+}
 let CTX=null, sel={loc:null,prod:null,pallets:2,date:null,editing:null,note:''};
 
 async function rpc(fn,args){
   const r=await fetch(API+fn,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
   if(!r.ok){let m='';try{m=(await r.json()).message||''}catch(e){}
-    throw new Error(MSG[m]||m||('Fout ('+r.status+')'));}
-  const t=await r.text(); return t?JSON.parse(t):null;
+    throw new Error(m?t(m):(t('err_generic')+' ('+r.status+')'));}
+  const txt=await r.text(); return txt?JSON.parse(txt):null;
 }
 function el(id){return document.getElementById(id)}
 function toast(m){const t=el('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function fmtD(d){return new Date(d+'T12:00:00').toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'})}
+function fmtD(d){return new Date(d+'T12:00:00').toLocaleDateString(LANG==='en'?'en-GB':'nl-NL',{weekday:'short',day:'numeric',month:'short'})}
 function todayStr(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')}
 function fail(msg){el('app').innerHTML='<div class="center"><div style="font-size:40px">🫐</div><p style="margin-top:14px">'+esc(msg)+'</p></div>'}
 
@@ -123,34 +211,34 @@ function renderGrower(){
   const loc=L.find(l=>l.id===sel.loc);
   const dates=loc?loc.pickup_dates:[];
   if(sel.date&&!dates.includes(sel.date))sel.date=null;
-  let h='<div class="card"><h2>'+(sel.editing?'✏️ Aanmelding wijzigen':'Beschikbaarheid aanmelden')+'</h2>';
-  if(L.length>1&&!sel.editing){h+='<div class="lbl">Locatie</div><div class="chips">'+
+  let h='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
+  if(L.length>1&&!sel.editing){h+='<div class="lbl">'+t('location')+'</div><div class="chips">'+
     L.map(l=>'<button class="chip'+(sel.loc===l.id?' sel':'')+'" onclick="pick(\'loc\',\''+l.id+'\')">'+esc(l.name)+'</button>').join('')+'</div>';}
-  h+='<div class="lbl">Product</div><div class="chips">'+
-    P.map(p=>'<button class="chip'+(sel.prod===p.id?' sel':'')+'" onclick="pick(\'prod\',\''+p.id+'\')">'+esc(p.name_nl)+'</button>').join('')+'</div>';
-  h+='<div class="lbl">Aantal pallets</div><div class="step"><button onclick="adj(-1)">−</button><span class="n">'+sel.pallets+'</span><button onclick="adj(1)">+</button><small>pallets</small></div>';
-  h+='<div class="lbl">Ophaaldag</div>';
+  h+='<div class="lbl">'+t('product')+'</div><div class="chips">'+
+    P.map(p=>'<button class="chip'+(sel.prod===p.id?' sel':'')+'" onclick="pick(\'prod\',\''+p.id+'\')">'+esc(LANG==='en'?p.name_en:p.name_nl)+'</button>').join('')+'</div>';
+  h+='<div class="lbl">'+t('pallets_n')+'</div><div class="step"><button onclick="adj(-1)">−</button><span class="n">'+sel.pallets+'</span><button onclick="adj(1)">+</button><small>'+t('pallets')+'</small></div>';
+  h+='<div class="lbl">'+t('pickup_day')+'</div>';
   h+=dates.length?'<div class="chips">'+dates.map(d=>'<button class="chip'+(sel.date===d?' sel':'')+'" onclick="pick(\'date\',\''+d+'\')">'+fmtD(d)+'</button>').join('')+'</div>'
-    :'<div class="muted">'+(loc?'Nog geen ophaaldagen beschikbaar voor deze locatie. Miss Berry stelt deze in.':'Kies eerst een locatie.')+'</div>';
-  h+='<div class="lbl">Opmerking (optioneel)</div><textarea id="note" rows="1" placeholder="Bijv. bijzonderheden over de partij">'+esc(sel.note||'')+'</textarea>';
+    :'<div class="muted">'+(loc?t('no_days'):t('pick_loc'))+'</div>';
+  h+='<div class="lbl">'+t('note_lbl')+'</div><textarea id="note" rows="1" placeholder="'+t('note_ph')+'">'+esc(sel.note||'')+'</textarea>';
   const ready=sel.loc&&sel.prod&&sel.date&&sel.pallets>0;
-  h+='<button class="btn" id="sub" '+(ready?'':'disabled')+' onclick="submitAnn()">'+(sel.editing?'Wijziging opslaan':'Aanmelden')+'</button>';
-  if(sel.editing)h+='<button class="btn sub" onclick="stopEdit()">Niet wijzigen</button>';
+  h+='<button class="btn" id="sub" '+(ready?'':'disabled')+' onclick="submitAnn()">'+(sel.editing?t('save_change'):t('submit'))+'</button>';
+  if(sel.editing)h+='<button class="btn sub" onclick="stopEdit()">'+t('no_edit')+'</button>';
   h+='<div class="err" id="ferr"></div></div>';
 
-  h+='<div class="card"><h2>Mijn aanmeldingen</h2>';
-  if(!A.length)h+='<div class="muted">Nog geen aanmeldingen.</div>';
+  h+='<div class="card"><h2>'+t('my_ann')+'</h2>';
+  if(!A.length)h+='<div class="muted">'+t('no_ann')+'</div>';
   A.forEach(a=>{
     const late=a.status==='announced'&&a.pickup_date<=todayStr();
-    const st=a.status==='picked_up'?['Opgehaald','b-ok']:a.status==='cancelled'?['Geannuleerd','b-grey']:['Aangemeld','b-warn'];
-    h+='<div class="row"><div><b>'+a.pallets+' pallets '+esc(a.product_nl)+'</b><div class="sub2">'+esc(a.location)+' · ophalen '+fmtD(a.pickup_date)+'</div>'
-      +(a.truck_alert?'<div class="sub2" style="color:var(--warn);font-weight:600">🚚 Melding verstuurd — Miss Berry is op de hoogte</div>'
-        :(late?'<button class="truck" onclick="truck(\''+a.id+'\')">🚚 Waar blijft mijn vrachtwagen?</button>':''))
-      +(a.status==='announced'?'<div class="acts"><button class="btn tiny" onclick="editAnn(\''+a.id+'\')">✏️ Wijzigen</button>'
-        +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="cancelAnnG(\''+a.id+'\')">Annuleren</button></div>':'')
+    const st=a.status==='picked_up'?[t('st_picked'),'b-ok']:a.status==='cancelled'?[t('st_cancelled'),'b-grey']:[t('st_announced'),'b-warn'];
+    h+='<div class="row"><div><b>'+a.pallets+' '+t('pallets')+' '+esc(pname(a))+'</b><div class="sub2">'+esc(a.location)+' · '+t('pickup_pre')+' '+fmtD(a.pickup_date)+'</div>'
+      +(a.truck_alert?'<div class="sub2" style="color:var(--warn);font-weight:600">'+t('alert_sent_line')+'</div>'
+        :(late?'<button class="truck" onclick="truck(\''+a.id+'\')">'+t('truck_btn')+'</button>':''))
+      +(a.status==='announced'?'<div class="acts"><button class="btn tiny" onclick="editAnn(\''+a.id+'\')">'+t('edit_btn')+'</button>'
+        +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="cancelAnnG(\''+a.id+'\')">'+t('cancel_btn')+'</button></div>':'')
       +'</div><span class="badge '+st[1]+'">'+st[0]+'</span></div>';
   });
-  h+='</div><p class="muted" style="margin-top:12px;text-align:center">Vragen? Bel of app Miss Berry zoals je gewend bent.</p>';
+  h+='</div><p class="muted" style="margin-top:12px;text-align:center">'+t('footer_g')+'</p>';
   el('app').innerHTML=h;
 }
 function pick(k,v){sel.note=el('note')?el('note').value:sel.note;
@@ -163,9 +251,9 @@ function editAnn(id){
 }
 function stopEdit(){sel={loc:CTX.locations.length===1?CTX.locations[0].id:null,prod:null,pallets:2,date:null,editing:null,note:''};renderGrower()}
 async function cancelAnnG(id){
-  if(!confirm('Weet je zeker dat je deze aanmelding wilt annuleren?'))return;
+  if(!confirm(t('confirm_cancel')))return;
   try{await rpc('cancel_announcement',{p_token:G_TOKEN,p_announcement:id});
-    toast('Aanmelding geannuleerd — Miss Berry ziet dit direct.');
+    toast(t('toast_cancelled'));
     if(sel.editing===id)stopEdit();
     await loadGrower();
   }catch(e){toast(e.message)}
@@ -175,10 +263,10 @@ async function submitAnn(){
   try{
     if(sel.editing){
       await rpc('update_announcement',{p_token:G_TOKEN,p_announcement:sel.editing,p_pallets:sel.pallets,p_pickup_date:sel.date,p_product:sel.prod,p_note:el('note').value});
-      toast('✏️ Gewijzigd — Miss Berry ziet dit direct.');
+      toast(t('toast_updated'));
     }else{
       await rpc('create_announcement',{p_token:G_TOKEN,p_location:sel.loc,p_product:sel.prod,p_pallets:sel.pallets,p_pickup_date:sel.date,p_note:el('note').value});
-      toast('✅ Aangemeld! Miss Berry plant het transport.');
+      toast(t('toast_created'));
     }
     sel={loc:sel.loc,prod:null,pallets:2,date:null,editing:null,note:''};
     await loadGrower();
@@ -186,7 +274,7 @@ async function submitAnn(){
 }
 async function truck(id){
   try{await rpc('raise_truck_alert',{p_token:G_TOKEN,p_announcement:id,p_message:null});
-    toast('🚚 Melding verstuurd — Miss Berry zoekt het uit.');await loadGrower();
+    toast(t('toast_alert'));await loadGrower();
   }catch(e){toast(e.message)}
 }
 
@@ -195,35 +283,35 @@ let ADM=null, newDates={};
 async function loadAdmin(){
   try{ADM=await rpc('admin_overview',{p_token:A_TOKEN});}catch(e){return fail(e.message)}
   ADM.settings=ADM.settings||{};ADM.routes=ADM.routes||[];
-  el('who').textContent='Beheer';el('subT').textContent='Weekplanner';
+  el('who').textContent=t('admin');el('subT').textContent=t('week_planner');
   document.querySelector('.wrap#app').classList.add('wide');
   renderAdmin();
 }
 function renderAdmin(){
   const open=ADM.exceptions.filter(e=>!e.resolved_at);
   let h='';
-  h+='<div class="card"><h2>🚨 Meldingen'+(open.length?' <span class="badge b-bad">'+open.length+' open</span>':'')+'</h2>';
-  if(!open.length)h+='<div class="muted">Geen open meldingen. 🎉</div>';
-  open.forEach(e=>{h+='<div class="row"><div><b>🚚 Waar blijft mijn vrachtwagen?</b><div class="sub2">'+esc(e.grower)+' · '+esc(e.location)+' · '+e.pallets+' pallets · ophalen '+fmtD(e.pickup_date)+'</div>'
+  h+='<div class="card"><h2>'+t('alerts_h')+(open.length?' <span class="badge b-bad">'+open.length+' '+t('open')+'</span>':'')+'</h2>';
+  if(!open.length)h+='<div class="muted">'+t('no_alerts')+'</div>';
+  open.forEach(e=>{h+='<div class="row"><div><b>'+t('truck_btn')+'</b><div class="sub2">'+esc(e.grower)+' · '+esc(e.location)+' · '+e.pallets+' '+t('pallets')+' · '+t('pickup_pre')+' '+fmtD(e.pickup_date)+'</div>'
     +(e.message?'<div class="sub2">“'+esc(e.message)+'”</div>':'')+'</div>'
-    +'<button class="btn tiny" onclick="resolveExc(\''+e.id+'\')">Opgelost</button></div>';});
+    +'<button class="btn tiny" onclick="resolveExc(\''+e.id+'\')">'+t('resolved_btn')+'</button></div>';});
   h+='</div>';
 
   const T=todayStr();
   const ann=ADM.announcements.filter(a=>a.status!=='cancelled'||a.change_flag==='cancelled');
   const upc=ann.filter(a=>a.pickup_date>=T), past=ann.filter(a=>a.pickup_date<T);
   const days=[...new Set([...upc.map(a=>a.pickup_date),...ADM.routes.filter(r=>r.date>=T).map(r=>r.date)])].sort();
-  h+='<div class="card"><h2>📅 Weekplanner</h2>';
-  if(!days.length)h+='<div class="muted">Nog geen aanmeldingen of routes.</div>';
+  h+='<div class="card"><h2>'+t('planner_h')+'</h2>';
+  if(!days.length)h+='<div class="muted">'+t('no_plan')+'</div>';
   days.forEach(d=>{
-    h+='<h3>'+fmtD(d)+(d===T?' · vandaag':'')+'</h3>';
+    h+='<h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3>';
     ADM.routes.filter(r=>r.date===d).forEach(r=>{
       const on=upc.filter(a=>a.route_id===r.id);
       const tot=on.filter(a=>a.status!=='cancelled').reduce((s,a)=>s+a.pallets,0);
       const c=cap(r), pct=Math.min(100,Math.round(tot/c*100));
-      const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{pm[a.product_nl]=(pm[a.product_nl]||0)+a.pallets});
+      const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{const k=pname(a);pm[k]=(pm[k]||0)+a.pallets});
       const prodSum=Object.entries(pm).map(([p,n])=>n+' '+p).join(' · ');
-      h+='<div class="route"><div class="rhead"><b>🚚 '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+tot+' / '+c+' pallets</span></div>'
+      h+='<div class="route"><div class="rhead"><b>🚚 '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
         +'<div class="fill"><i class="'+(tot>c?'over':'')+'" style="width:'+pct+'%"></i></div>'
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
         +on.map(a=>annCard(a,d)).join('')
@@ -231,37 +319,38 @@ function renderAdmin(){
         +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">🗑</button></div></div>';
     });
     const un=upc.filter(a=>a.pickup_date===d&&!a.route_id);
-    if(un.length)h+='<div class="pool"><b>📥 Nog niet ingedeeld ('+un.length+')</b>'+un.map(a=>annCard(a,d)).join('')+'</div>';
-    h+='<div style="margin-top:8px"><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">+ Nieuwe route</button></div>';
+    if(un.length)h+='<div class="pool"><b>'+t('pool')+' ('+un.length+')</b>'+un.map(a=>annCard(a,d)).join('')+'</div>';
+    h+='<div style="margin-top:8px"><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
   });
   if(past.length){
-    h+='<details style="margin-top:12px"><summary>Eerdere aanmeldingen ('+past.length+')</summary>';
+    h+='<details style="margin-top:12px"><summary>'+t('past_ann')+' ('+past.length+')</summary>';
     past.forEach(a=>{h+=annCard(a,null)});
     h+='</details>';
   }
   h+='</div>';
 
   h+='<div class="cols">';
-  h+='<div class="card"><h2>⚙️ Instellingen</h2>'
+  h+='<div class="card"><h2>'+t('settings_h')+'</h2>'
     +'<div class="grid2"><input id="capin" value="'+esc(ADM.settings.default_truck_capacity||'44')+'" inputmode="numeric">'
-    +'<button class="btn tiny" onclick="setCap()">Opslaan</button></div>'
-    +'<div class="muted" style="margin-top:6px">Standaard vrachtwagencapaciteit (pallets). Per route aan te passen.</div></div>';
+    +'<button class="btn tiny" onclick="setCap()">'+t('save')+'</button></div>'
+    +'<div class="muted" style="margin-top:6px">'+t('cap_hint')+'</div></div>';
 
-  h+='<div class="card"><h2>👩‍🌾 Telers & ophaaldagen</h2>';
+  h+='<div class="card"><h2>'+t('growers_h')+'</h2>';
   ADM.growers.forEach(g=>{
-    h+='<details open><summary>'+esc(g.name)+' <span class="muted">'+g.locations.length+' locatie'+(g.locations.length===1?'':'s')+'</span></summary>';
+    h+='<details open><summary>'+esc(g.name)+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
     h+='<div class="muted" style="margin:6px 0">'+esc(g.contact||'')+(g.phone?' · '+esc(g.phone):'')+'</div>';
-    h+='<div class="linkbox">Portaallink: '+location.origin+location.pathname+'?t='+g.token+'</div>'
-      +'<button class="btn sub" onclick="copyLink(\''+g.token+'\')">📋 Kopieer link voor teler</button>';
+    h+='<div class="linkbox">'+t('portal_link')+': '+location.origin+location.pathname+'?t='+g.token+'</div>'
+      +'<button class="btn sub" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>';
     g.locations.forEach(l=>{
       h+='<h3>'+esc(l.name)+'</h3><div class="muted">'+esc(l.address||'')+'</div><div>';
       l.pickup_dates.filter(d=>d.active).forEach(d=>{h+='<span class="dt">'+fmtD(d.date)+'<button onclick="rmDate(\''+l.id+'\',\''+d.date+'\')">✕</button></span>';});
       h+='</div><div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
-        +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">+ Ophaaldag</button></div>';
+        +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>'
+        +'<label class="muted" style="display:flex;align-items:center;gap:7px;margin-top:6px;cursor:pointer"><input type="checkbox" id="wk-'+l.id+'" style="width:auto">'+t('repeat_weekly')+'</label>';
     });
-    h+='<div style="margin-top:10px"><button class="btn sub" onclick="addLoc(\''+g.id+'\')">+ Locatie toevoegen</button></div></details>';
+    h+='<div style="margin-top:10px"><button class="btn sub" onclick="addLoc(\''+g.id+'\')">'+t('add_loc')+'</button></div></details>';
   });
-  h+='<div style="margin-top:12px"><button class="btn sub" onclick="addGrower()">+ Nieuwe teler</button></div></div>';
+  h+='<div style="margin-top:12px"><button class="btn sub" onclick="addGrower()">'+t('new_grower')+'</button></div></div>';
   h+='</div>';
   el('app').innerHTML=h;
 }
@@ -269,89 +358,93 @@ function cap(r){return r.capacity||parseInt(ADM.settings.default_truck_capacity|
 function annCard(a,d){
   const cancelled=a.status==='cancelled';
   const cls=cancelled?' cflag':(a.change_flag==='updated'?' flag':'');
-  const st=a.status==='picked_up'?['Opgehaald','b-ok']:cancelled?['Geannuleerd','b-bad']:['Aangemeld','b-warn'];
+  const st=a.status==='picked_up'?[t('st_picked'),'b-ok']:cancelled?[t('st_cancelled'),'b-bad']:[t('st_announced'),'b-warn'];
   let h='<div class="acard'+cls+'"><div class="row" style="border:0;padding:0"><div><b>'+esc(a.grower)+'</b>'
-    +(a.open_alert?' <span class="badge b-bad">🚚 melding</span>':'')
-    +(a.change_flag==='updated'?' <span class="badge b-warn">✏️ gewijzigd</span>':'')
-    +(cancelled?' <span class="badge b-bad">geannuleerd door teler</span>':'')
-    +'<div class="sub2">'+a.pallets+' pallets '+esc(a.product_nl)+' · '+esc(a.location)+(a.note?' · “'+esc(a.note)+'”':'')+'</div></div>'
+    +(a.open_alert?' <span class="badge b-bad">'+t('b_alert')+'</span>':'')
+    +(a.change_flag==='updated'?' <span class="badge b-warn">'+t('b_changed')+'</span>':'')
+    +(cancelled?' <span class="badge b-bad">'+t('b_cancelled_by')+'</span>':'')
+    +'<div class="sub2">'+a.pallets+' '+t('pallets')+' '+esc(pname(a))+' · '+esc(a.location)+(a.note?' · “'+esc(a.note)+'”':'')+'</div></div>'
     +'<span class="badge '+st[1]+'">'+st[0]+'</span></div>';
   let acts='';
-  if(a.status==='announced')acts+='<button class="btn tiny" onclick="setSt(\''+a.id+'\',\'picked_up\')">✓ Opgehaald</button>';
+  if(a.status==='announced')acts+='<button class="btn tiny" onclick="setSt(\''+a.id+'\',\'picked_up\')">'+t('picked_btn')+'</button>';
   if(!cancelled&&d){
-    if(a.route_id)acts+='<button class="btn tiny sub" onclick="assign(\''+a.id+'\',null)">↩︎ uit route</button>';
+    if(a.route_id)acts+='<button class="btn tiny sub" onclick="assign(\''+a.id+'\',null)">'+t('unassign')+'</button>';
     else{
       const rs=ADM.routes.filter(r=>r.date===d);
       if(rs.length)acts+='<select id="rs-'+a.id+'">'+rs.map(r=>'<option value="'+r.id+'">'+esc(r.name)+'</option>').join('')+'</select>'
-        +'<button class="btn tiny" onclick="assign(\''+a.id+'\',el(\'rs-'+a.id+'\').value)">→ route</button>';
+        +'<button class="btn tiny" onclick="assign(\''+a.id+'\',el(\'rs-'+a.id+'\').value)">'+t('to_route')+'</button>';
     }
   }
-  if(a.change_flag)acts+='<button class="btn tiny sub" onclick="clearFlag(\''+a.id+'\')">OK, gezien</button>';
+  if(a.change_flag)acts+='<button class="btn tiny sub" onclick="clearFlag(\''+a.id+'\')">'+t('ok_seen')+'</button>';
   if(acts)h+='<div class="acts">'+acts+'</div>';
   return h+'</div>';
 }
 async function assign(aid,rid){try{await rpc('admin_assign_route',{p_token:A_TOKEN,p_announcement:aid,p_route:rid});await loadAdmin();}catch(e){toast(e.message)}}
 async function clearFlag(aid){try{await rpc('admin_clear_change_flag',{p_token:A_TOKEN,p_announcement:aid});await loadAdmin();}catch(e){toast(e.message)}}
 async function newRoute(d){
-  const n=prompt('Naam route (bv. Route Limburg):');if(!n)return;
-  const c=prompt('Vervoerder (optioneel):')||'';
-  const cp=prompt('Capaciteit in pallets:',ADM.settings.default_truck_capacity||'44');
-  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:null,p_date:d,p_name:n,p_carrier:c,p_capacity:cp?parseInt(cp,10):null});toast('Route aangemaakt');await loadAdmin();}catch(e){toast(e.message)}
+  const n=prompt(t('p_route_name'));if(!n)return;
+  const c=prompt(t('p_carrier'))||'';
+  const cp=prompt(t('p_cap'),ADM.settings.default_truck_capacity||'44');
+  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:null,p_date:d,p_name:n,p_carrier:c,p_capacity:cp?parseInt(cp,10):null});toast(t('toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function editRoute(id){
   const r=ADM.routes.find(x=>x.id===id);if(!r)return;
-  const n=prompt('Naam route:',r.name);if(!n)return;
-  const c=prompt('Vervoerder (optioneel):',r.carrier||'')||'';
-  const cp=prompt('Capaciteit in pallets:',String(r.capacity||ADM.settings.default_truck_capacity||'44'));
-  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:id,p_date:r.date,p_name:n,p_carrier:c,p_capacity:cp?parseInt(cp,10):null});toast('Route bijgewerkt');await loadAdmin();}catch(e){toast(e.message)}
+  const n=prompt(t('p_route_name2'),r.name);if(!n)return;
+  const c=prompt(t('p_carrier'),r.carrier||'')||'';
+  const cp=prompt(t('p_cap'),String(r.capacity||ADM.settings.default_truck_capacity||'44'));
+  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:id,p_date:r.date,p_name:n,p_carrier:c,p_capacity:cp?parseInt(cp,10):null});toast(t('toast_route_upd'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function delRoute(id){
-  if(!confirm('Route verwijderen? Aanmeldingen komen terug bij "Nog niet ingedeeld".'))return;
-  try{await rpc('admin_delete_route',{p_token:A_TOKEN,p_route:id});toast('Route verwijderd');await loadAdmin();}catch(e){toast(e.message)}
+  if(!confirm(t('confirm_del_route')))return;
+  try{await rpc('admin_delete_route',{p_token:A_TOKEN,p_route:id});toast(t('toast_route_del'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function setCap(){
   const v=parseInt(el('capin').value,10);
-  if(!v||v<1||v>100)return toast('Ongeldige capaciteit');
-  try{await rpc('admin_set_setting',{p_token:A_TOKEN,p_key:'default_truck_capacity',p_value:String(v)});toast('Capaciteit opgeslagen');await loadAdmin();}catch(e){toast(e.message)}
+  if(!v||v<1||v>100)return toast(t('bad_cap'));
+  try{await rpc('admin_set_setting',{p_token:A_TOKEN,p_key:'default_truck_capacity',p_value:String(v)});toast(t('toast_cap'));await loadAdmin();}catch(e){toast(e.message)}
 }
 function dset(l){return (ADM.growers.flatMap(g=>g.locations).find(x=>x.id===l)?.pickup_dates||[]).filter(d=>d.active).map(d=>d.date)}
 async function addDate(lid){
-  const v=el('nd-'+lid).value;if(!v)return toast('Kies eerst een datum');
-  const ds=[...new Set([...dset(lid),v])];
-  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast('Ophaaldag toegevoegd');await loadAdmin();}catch(e){toast(e.message)}
+  const v=el('nd-'+lid).value;if(!v)return toast(t('pick_date_first'));
+  const wk=el('wk-'+lid)&&el('wk-'+lid).checked;
+  const add=[v];
+  if(wk){for(let i=1;i<8;i++){const dt=new Date(v+'T12:00:00');dt.setDate(dt.getDate()+7*i);
+    add.push(dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'));}}
+  const ds=[...new Set([...dset(lid),...add])];
+  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(wk?t('toast_days_add'):t('toast_day_add'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function rmDate(lid,d){
   const ds=dset(lid).filter(x=>x!==d);
-  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast('Ophaaldag verwijderd');await loadAdmin();}catch(e){toast(e.message)}
+  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(t('toast_day_rm'));await loadAdmin();}catch(e){toast(e.message)}
 }
-async function resolveExc(id){try{await rpc('admin_resolve_exception',{p_token:A_TOKEN,p_exception:id});toast('Melding opgelost');await loadAdmin();}catch(e){toast(e.message)}}
+async function resolveExc(id){try{await rpc('admin_resolve_exception',{p_token:A_TOKEN,p_exception:id});toast(t('toast_exc'));await loadAdmin();}catch(e){toast(e.message)}}
 async function setSt(id,st){try{await rpc('admin_set_status',{p_token:A_TOKEN,p_announcement:id,p_status:st});await loadAdmin();}catch(e){toast(e.message)}}
 async function addGrower(){
-  const n=prompt('Naam teler (bedrijfsnaam):');if(!n)return;
-  const c=prompt('Contactpersoon (optioneel):')||'';const p=prompt('Telefoon (optioneel):')||'';
+  const n=prompt(t('p_grower_name'));if(!n)return;
+  const c=prompt(t('p_contact'))||'';const p=prompt(t('p_phone'))||'';
   try{const r=await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:null,p_name:n,p_contact:c,p_phone:p});
-    const ln=prompt('Naam eerste locatie:','Hoofdlocatie');
-    if(ln)await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:prompt('Adres (optioneel):')||''});
-    toast('Teler toegevoegd');await loadAdmin();
+    const ln=prompt(t('p_first_loc'),t('p_first_loc_def'));
+    if(ln)await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:prompt(t('p_addr'))||''});
+    toast(t('toast_grower'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
 async function addLoc(gid){
-  const n=prompt('Naam locatie:');if(!n)return;
-  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:gid,p_name:n,p_address:prompt('Adres (optioneel):')||''});
-    toast('Locatie toegevoegd');await loadAdmin();
+  const n=prompt(t('p_loc_name'));if(!n)return;
+  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:gid,p_name:n,p_address:prompt(t('p_addr'))||''});
+    toast(t('toast_loc'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
 function copyLink(tok){
   const url=location.origin+location.pathname+'?t='+tok;
-  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link gekopieerd — stuur via WhatsApp'),()=>prompt('Kopieer deze link:',url));
+  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast(t('toast_copy')),()=>prompt(t('p_copy'),url));
 }
 
 /* ---------- no-token: paste link ---------- */
 function showLinkEntry(){
   el('app').innerHTML='<div class="center"><div style="font-size:40px">🫐</div>'
-  +'<p style="margin-top:14px">Geen toegangslink. Open de persoonlijke link die je van Miss Berry hebt gekregen — of plak hem hieronder.</p>'
-  +'<input id="lnk" placeholder="Plak hier je link of code" autocomplete="off" style="margin-top:14px;width:100%;max-width:340px;padding:13px;border:1.5px solid var(--line);border-radius:12px;font-size:15px">'
-  +'<div style="max-width:340px;margin:0 auto"><button class="btn" onclick="useLink()">Openen</button></div>'
+  +'<p style="margin-top:14px">'+t('link_msg')+'</p>'
+  +'<input id="lnk" placeholder="'+t('link_ph')+'" autocomplete="off" style="margin-top:14px;width:100%;max-width:340px;padding:13px;border:1.5px solid var(--line);border-radius:12px;font-size:15px">'
+  +'<div style="max-width:340px;margin:0 auto"><button class="btn" onclick="useLink()">'+t('open_btn')+'</button></div>'
   +'<p id="lerr" style="color:#b3261e;margin-top:10px"></p></div>';
 }
 async function useLink(){
@@ -364,10 +457,12 @@ async function useLink(){
   }
   if(a)location.href='?admin='+encodeURIComponent(a);
   else if(t)location.href='?t='+encodeURIComponent(t);
-  else el('lerr').textContent='Geen geldige link of code herkend.';
+  else el('lerr').textContent=t('link_err');
 }
 
 /* ---------- boot ---------- */
+el('langBtn').textContent=LANG==='nl'?'EN':'NL';
+el('subT').textContent=t('portal_sub');
 if(A_TOKEN)loadAdmin();
 else if(G_TOKEN)loadGrower();
 else showLinkEntry();
