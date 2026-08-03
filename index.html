@@ -323,7 +323,7 @@ function renderGrower(){
         +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="cancelAnnG(\''+a.id+'\')">'+(pend==='ca:'+a.id?t('sure_btn'):t('cancel_btn'))+'</button></div>':'')
       +'</div><span class="badge '+st[1]+'">'+st[0]+'</span></div>';
   };
-  const act=A.filter(a=>a.status==='announced'||(a.status==='picked_up'&&a.pickup_date>=T)).sort((x,y)=>x.pickup_date.localeCompare(y.pickup_date));
+  const act=A.filter(a=>a.status==='announced'||(a.status==='picked_up'&&a.pickup_date>=T)).sort((x,y)=>x.pickup_date.localeCompare(y.pickup_date)||String(x.created_at||'').localeCompare(String(y.created_at||'')));
   const old=A.filter(a=>!(a.status==='announced'||(a.status==='picked_up'&&a.pickup_date>=T))).sort((x,y)=>y.pickup_date.localeCompare(x.pickup_date));
   h+='<div class="card"><h2>'+t('my_ann')+'</h2>';
   if(!A.length)h+='<div class="muted">'+t('no_ann')+'</div>';
@@ -623,14 +623,14 @@ function showLinkEntry(){
 }
 async function useLink(){
   const v=el('lnk').value.trim(); if(!v)return;
-  let t=null,a=null;
-  try{const u=new URL(v); t=u.searchParams.get('t'); a=u.searchParams.get('admin');}catch(e){}
-  if(!t&&!a&&/^([0-9a-f]{64}|[A-Za-z0-9]{8,12})$/.test(v)){
-    try{await rpc('grower_context',{p_token:v}); t=v;}
-    catch(e){ try{await rpc('admin_overview',{p_token:v}); a=v;}catch(e2){} }
+  let gt=null,at=null;
+  try{const u=new URL(/^https?:\/\//i.test(v)?v:'https://'+v); gt=u.searchParams.get('t'); at=u.searchParams.get('admin');}catch(e){}
+  if(!gt&&!at&&/^([0-9a-f]{64}|[A-Za-z0-9]{8,12})$/.test(v)){
+    try{await rpc('grower_context',{p_token:v}); gt=v;}
+    catch(e){ try{await rpc('admin_overview',{p_token:v}); at=v;}catch(e2){} }
   }
-  if(a)location.href='?admin='+encodeURIComponent(a);
-  else if(t)location.href='?t='+encodeURIComponent(t);
+  if(at)location.href='?admin='+encodeURIComponent(at);
+  else if(gt)location.href='?t='+encodeURIComponent(gt);
   else el('lerr').textContent=t('link_err');
 }
 
@@ -645,7 +645,7 @@ function idleRefresh(){
   if(pend)return;
   const ae=document.activeElement;
   if(ae&&['TEXTAREA','INPUT','SELECT'].includes(ae.tagName))return;
-  if(G_TOKEN){if(!sel.editing&&!sel.prod&&!sel.date)loadGrower()}
+  if(G_TOKEN){if(!sel.editing&&!sel.prod&&!sel.date){sel.note=el('note')?el('note').value:sel.note;loadGrower()}}
   else if(A_TOKEN){if(!rForm&&!gForm&&!lForm)loadAdmin()}
 }
 setInterval(idleRefresh,60000);
