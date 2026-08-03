@@ -348,7 +348,7 @@ async function truck(id){
 }
 
 /* ---------- ADMIN (Manon) ---------- */
-let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null;
+let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null, gOpen={};
 async function loadAdmin(){
   try{ADM=await rpc('admin_overview',{p_token:A_TOKEN});}catch(e){return fail(e.message)}
   ADM.settings=ADM.settings||{};ADM.routes=ADM.routes||[];
@@ -407,7 +407,7 @@ function renderAdmin(){
 
   h+='<div class="card"><h2>'+t('growers_h')+'</h2>';
   ADM.growers.forEach(g=>{
-    h+='<details open><summary>'+esc(g.name)+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
+    h+='<details'+(gOpen[g.id]===false?'':' open')+' ontoggle="gOpen[\''+g.id+'\']=this.open"><summary>'+esc(g.name)+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
     h+='<div class="muted" style="margin:6px 0">'+esc(g.contact||'')+(g.phone?' · '+esc(g.phone):'')+'</div>';
     h+='<div class="linkbox">'+t('portal_link')+': '+location.origin+location.pathname+'?t='+g.token+'</div>'
       +'<button class="btn sub" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>';
