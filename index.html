@@ -117,14 +117,14 @@ nl:{
   new_route:'+ Nieuwe route', pool:'📥 Nog niet ingedeeld', past_ann:'Eerdere aanmeldingen',
   settings_h:'⚙️ Instellingen', save:'Opslaan', cap_hint:'Standaard vrachtwagencapaciteit (pallets). Per route aan te passen.',
   growers_h:'👩‍🌾 Telers & ophaaldagen', loc_one:'locatie', loc_many:'locaties', portal_link:'Portaallink', copy_link:'📋 Kopieer link voor teler',
-  add_day:'+ Ophaaldag', repeat_weekly:'🔁 8 weken wekelijks herhalen', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
+  add_day:'+ Ophaaldag', fixed_days:'🔁 Vaste ophaaldag — elke week:', toast_weekly:'Vaste ophaaldagen bijgewerkt', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
   b_alert:'🚚 melding', b_changed:'✏️ gewijzigd', b_cancelled_by:'geannuleerd door teler',
   picked_btn:'✓ Opgehaald', unassign:'↩︎ uit route', to_route:'→ route', ok_seen:'OK, gezien',
   p_route_name:'Naam route (bv. Route Limburg):', p_route_name2:'Naam route:', p_carrier:'Vervoerder (optioneel):', p_cap:'Capaciteit in pallets:',
   toast_route_new:'Route aangemaakt', toast_route_upd:'Route bijgewerkt', toast_route_del:'Route verwijderd',
   confirm_del_route:'Route verwijderen? Aanmeldingen komen terug bij "Nog niet ingedeeld".',
   bad_cap:'Ongeldige capaciteit', toast_cap:'Capaciteit opgeslagen',
-  pick_date_first:'Kies eerst een datum', toast_day_add:'Ophaaldag toegevoegd', toast_days_add:'8 wekelijkse ophaaldagen toegevoegd', toast_day_rm:'Ophaaldag verwijderd', toast_exc:'Melding opgelost',
+  pick_date_first:'Kies eerst een datum', toast_day_add:'Ophaaldag toegevoegd', toast_day_rm:'Ophaaldag verwijderd', toast_exc:'Melding opgelost',
   p_grower_name:'Naam teler (bedrijfsnaam):', p_contact:'Contactpersoon (optioneel):', p_phone:'Telefoon (optioneel):',
   p_first_loc:'Naam eerste locatie:', p_first_loc_def:'Hoofdlocatie', p_addr:'Adres (optioneel):', toast_grower:'Teler toegevoegd',
   p_loc_name:'Naam locatie:', toast_loc:'Locatie toegevoegd',
@@ -156,14 +156,14 @@ en:{
   new_route:'+ New route', pool:'📥 Not yet assigned', past_ann:'Past announcements',
   settings_h:'⚙️ Settings', save:'Save', cap_hint:'Default truck capacity (pallets). Adjustable per route.',
   growers_h:'👩‍🌾 Growers & pickup days', loc_one:'location', loc_many:'locations', portal_link:'Portal link', copy_link:'📋 Copy link for grower',
-  add_day:'+ Pickup day', repeat_weekly:'🔁 Repeat weekly for 8 weeks', add_loc:'+ Add location', new_grower:'+ New grower',
+  add_day:'+ Pickup day', fixed_days:'🔁 Fixed pickup day — every week:', toast_weekly:'Weekly pickup days updated', add_loc:'+ Add location', new_grower:'+ New grower',
   b_alert:'🚚 alert', b_changed:'✏️ changed', b_cancelled_by:'cancelled by grower',
   picked_btn:'✓ Picked up', unassign:'↩︎ remove from route', to_route:'→ route', ok_seen:'OK, seen',
   p_route_name:'Route name (e.g. Route Limburg):', p_route_name2:'Route name:', p_carrier:'Carrier (optional):', p_cap:'Capacity in pallets:',
   toast_route_new:'Route created', toast_route_upd:'Route updated', toast_route_del:'Route deleted',
   confirm_del_route:'Delete route? Announcements return to "Not yet assigned".',
   bad_cap:'Invalid capacity', toast_cap:'Capacity saved',
-  pick_date_first:'Pick a date first', toast_day_add:'Pickup day added', toast_days_add:'8 weekly pickup days added', toast_day_rm:'Pickup day removed', toast_exc:'Alert resolved',
+  pick_date_first:'Pick a date first', toast_day_add:'Pickup day added', toast_day_rm:'Pickup day removed', toast_exc:'Alert resolved',
   p_grower_name:'Grower name (company):', p_contact:'Contact person (optional):', p_phone:'Phone (optional):',
   p_first_loc:'Name of first location:', p_first_loc_def:'Main location', p_addr:'Address (optional):', toast_grower:'Grower added',
   p_loc_name:'Location name:', toast_loc:'Location added',
@@ -206,10 +206,27 @@ async function loadGrower(){
   sel.loc=CTX.locations.length===1?CTX.locations[0].id:sel.loc;
   renderGrower();
 }
+const WD={nl:['ma','di','wo','do','vr','za','zo'],en:['Mo','Tu','We','Th','Fr','Sa','Su']};
+function wdN(d){return (WD[LANG]||WD.nl)[d-1]}
+function ymd(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
+function expandDates(loc){
+  if(!loc)return[];
+  const out=new Set(loc.pickup_dates||[]);
+  const wds=loc.weekly_days||[];
+  if(wds.length){
+    const base=new Date();base.setHours(12,0,0,0);
+    for(let i=0;i<56;i++){
+      const c=new Date(base);c.setDate(base.getDate()+i);
+      const iso=c.getDay()===0?7:c.getDay();
+      if(wds.includes(iso))out.add(ymd(c));
+    }
+  }
+  return [...out].sort();
+}
 function renderGrower(){
   const L=CTX.locations, P=CTX.products, A=CTX.announcements;
   const loc=L.find(l=>l.id===sel.loc);
-  const dates=loc?loc.pickup_dates:[];
+  const dates=expandDates(loc);
   if(sel.date&&!dates.includes(sel.date))sel.date=null;
   let h='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
   if(L.length>1&&!sel.editing){h+='<div class="lbl">'+t('location')+'</div><div class="chips">'+
@@ -344,9 +361,10 @@ function renderAdmin(){
     g.locations.forEach(l=>{
       h+='<h3>'+esc(l.name)+'</h3><div class="muted">'+esc(l.address||'')+'</div><div>';
       l.pickup_dates.filter(d=>d.active).forEach(d=>{h+='<span class="dt">'+fmtD(d.date)+'<button onclick="rmDate(\''+l.id+'\',\''+d.date+'\')">✕</button></span>';});
-      h+='</div><div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
-        +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>'
-        +'<label class="muted" style="display:flex;align-items:center;gap:7px;margin-top:6px;cursor:pointer"><input type="checkbox" id="wk-'+l.id+'" style="width:auto">'+t('repeat_weekly')+'</label>';
+      h+='</div><div class="muted" style="margin-top:8px">'+t('fixed_days')+'</div>'
+        +'<div class="chips" style="margin-top:4px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((l.weekly_days||[]).includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div>'
+        +'<div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
+        +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>';
     });
     h+='<div style="margin-top:10px"><button class="btn sub" onclick="addLoc(\''+g.id+'\')">'+t('add_loc')+'</button></div></details>';
   });
@@ -406,12 +424,14 @@ async function setCap(){
 function dset(l){return (ADM.growers.flatMap(g=>g.locations).find(x=>x.id===l)?.pickup_dates||[]).filter(d=>d.active).map(d=>d.date)}
 async function addDate(lid){
   const v=el('nd-'+lid).value;if(!v)return toast(t('pick_date_first'));
-  const wk=el('wk-'+lid)&&el('wk-'+lid).checked;
-  const add=[v];
-  if(wk){for(let i=1;i<8;i++){const dt=new Date(v+'T12:00:00');dt.setDate(dt.getDate()+7*i);
-    add.push(dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'));}}
-  const ds=[...new Set([...dset(lid),...add])];
-  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(wk?t('toast_days_add'):t('toast_day_add'));await loadAdmin();}catch(e){toast(e.message)}
+  const ds=[...new Set([...dset(lid),v])];
+  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(t('toast_day_add'));await loadAdmin();}catch(e){toast(e.message)}
+}
+async function toggleWD(lid,d){
+  const loc=ADM.growers.flatMap(g=>g.locations).find(x=>x.id===lid);
+  const cur=(loc&&loc.weekly_days)||[];
+  const ds=cur.includes(d)?cur.filter(x=>x!==d):[...cur,d];
+  try{await rpc('admin_set_weekly_days',{p_token:A_TOKEN,p_location:lid,p_days:ds});toast(t('toast_weekly'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function rmDate(lid,d){
   const ds=dset(lid).filter(x=>x!==d);
