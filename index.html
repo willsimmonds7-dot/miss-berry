@@ -59,6 +59,7 @@ input[type=text],input[type=date],input[type=tel]{width:100%;border:1.5px solid 
 .dt{display:inline-flex;align-items:center;gap:6px;background:var(--berry-l);color:var(--berry-d);border-radius:999px;padding:6px 8px 6px 12px;font-size:13px;font-weight:600;margin:3px 3px 0 0}
 .dt button{border:0;background:none;color:var(--berry-d);cursor:pointer;font-size:15px;line-height:1;padding:2px}
 .muted{color:var(--grey);font-size:13px}
+.dim{opacity:.55}
 .route{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:#fff}
 .rhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .fill{height:9px;background:#f0ecee;border-radius:999px;margin-top:8px;overflow:hidden}
@@ -141,7 +142,11 @@ nl:{
   succ_h:'Aangemeld!', succ_upd_h:'Wijziging opgeslagen', succ_sub:'Miss Berry plant het transport. Je ziet de status hieronder bij je aanmeldingen.', succ_new:'+ Nieuwe aanmelding',
   f_route_name:'Naam route (bv. Route Limburg)', f_carrier:'Vervoerder (optioneel)', f_cap:'Capaciteit (pallets)',
   f_gname:'Naam teler (bedrijfsnaam)', f_contact:'Contactpersoon (optioneel)', f_phone:'Telefoon (optioneel)',
-  f_lname:'Naam locatie', f_addr:'Adres (optioneel)', name_req:'Naam is verplicht'
+  f_lname:'Naam locatie', f_addr:'Adres (optioneel)', name_req:'Naam is verplicht',
+  pallet_one:'pallet', missing_pre:'Kies nog:', sure_btn:'Zeker weten?', st_planned:'Ingepland ✓',
+  this_week:'Deze week', next_week:'Volgende week',
+  inst_ios:'📲 Tip: zet dit portaal op je beginscherm — tik op Delen en kies “Zet op beginscherm”.',
+  inst_other:'📲 Tip: installeer dit portaal als app via het browsermenu (“App installeren”).'
 },
 en:{
   invalid_token:'This link is no longer valid. Please contact Miss Berry.',
@@ -185,9 +190,15 @@ en:{
   succ_h:'Announced!', succ_upd_h:'Changes saved', succ_sub:'Miss Berry will plan the transport. You can follow the status below in your announcements.', succ_new:'+ New announcement',
   f_route_name:'Route name (e.g. Route Limburg)', f_carrier:'Carrier (optional)', f_cap:'Capacity (pallets)',
   f_gname:'Grower name (company)', f_contact:'Contact person (optional)', f_phone:'Phone (optional)',
-  f_lname:'Location name', f_addr:'Address (optional)', name_req:'Name is required'
+  f_lname:'Location name', f_addr:'Address (optional)', name_req:'Name is required',
+  pallet_one:'pallet', missing_pre:'Still to choose:', sure_btn:'Are you sure?', st_planned:'Scheduled ✓',
+  this_week:'This week', next_week:'Next week',
+  inst_ios:'📲 Tip: add this portal to your home screen — tap Share and choose “Add to Home Screen”.',
+  inst_other:'📲 Tip: install this portal as an app via the browser menu (“Install app”).'
 }};
-function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.nl[k]||k}
+function t(k){const v=(I18N[LANG]&&I18N[LANG][k])||I18N.nl[k]||k;
+  return typeof v==='string'?v.replace(/^(\S{1,8}) (?=\S)/,function(m,e){return /[A-Za-z0-9+]/.test(e)?m:e+'  '}):v}
+function plt(n){return n+' '+(n===1?t('pallet_one'):t('pallets'))}
 function pname(o){return LANG==='en'?(o.product_en||o.product_nl):o.product_nl}
 function toggleLang(){
   LANG=LANG==='nl'?'en':'nl';
@@ -200,7 +211,7 @@ function applyLang(){
   else if(G_TOKEN&&CTX){el('subT').textContent=t('portal_sub');renderGrower();}
   else if(!A_TOKEN&&!G_TOKEN){el('subT').textContent=t('portal_sub');showLinkEntry();}
 }
-let CTX=null, sel={loc:null,prod:null,pallets:2,date:null,editing:null,note:''};
+let CTX=null, sel={loc:null,prod:null,pallets:2,date:null,editing:null,note:''}, pend=null;
 
 async function rpc(fn,args){
   const r=await fetch(API+fn,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
@@ -270,7 +281,7 @@ function renderGrower(){
   h+='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
   const last=sel.editing?null:[...A].filter(a=>a.status!=='cancelled').sort((x,y)=>String(y.created_at||'').localeCompare(String(x.created_at||'')))[0];
   if(last&&L.find(l=>l.id===last.location_id)&&P.find(p=>p.id===last.product_id)){
-    h+='<button class="chip" style="width:100%;text-align:left;margin-bottom:2px" onclick="sameAgain()">🔁 '+t('same_again')+': <b>'+last.pallets+' '+t('pallets')+' '+esc(pname(last))+(L.length>1?' · '+esc(last.location):'')+'</b></button>';
+    h+='<button class="chip" style="width:100%;text-align:left;margin-bottom:2px" onclick="sameAgain()">🔁  '+t('same_again')+': <b>'+plt(last.pallets)+' '+esc(pname(last))+(L.length>1?' · '+esc(last.location):'')+'</b></button>';
   }
   if(L.length>1&&!sel.editing){h+='<div class="lbl">'+t('location')+'</div><div class="chips">'+
     L.map(l=>'<button class="chip'+(sel.loc===l.id?' sel':'')+'" onclick="pick(\'loc\',\''+l.id+'\')">'+esc(l.name)+'</button>').join('')+'</div>';}
@@ -283,25 +294,43 @@ function renderGrower(){
   h+='<div class="lbl">'+t('note_lbl')+'</div><textarea id="note" rows="1" placeholder="'+t('note_ph')+'">'+esc(sel.note||'')+'</textarea>';
   const ready=sel.loc&&sel.prod&&sel.date&&sel.pallets>0;
   h+='<button class="btn" id="sub" '+(ready?'':'disabled')+' onclick="submitAnn()">'+(sel.editing?t('save_change'):t('submit'))+'</button>';
+  if(!ready){
+    const miss=[];if(!sel.loc)miss.push(t('location'));if(!sel.prod)miss.push(t('product'));if(!sel.date)miss.push(t('pickup_day'));
+    if(miss.length)h+='<div class="muted" style="text-align:center;margin-top:6px">'+t('missing_pre')+' '+miss.join(' · ').toLowerCase()+'</div>';
+  }
   if(sel.editing)h+='<button class="btn sub" onclick="stopEdit()">'+t('no_edit')+'</button>';
   h+='<div class="err" id="ferr"></div></div>';
   }
 
-  h+='<div class="card"><h2>'+t('my_ann')+'</h2>';
-  if(!A.length)h+='<div class="muted">'+t('no_ann')+'</div>';
-  A.forEach(a=>{
-    const late=a.status==='announced'&&a.pickup_date<=todayStr();
-    const st=a.status==='picked_up'?[t('st_picked'),'b-ok']:a.status==='cancelled'?[t('st_cancelled'),'b-grey']:[t('st_announced'),'b-warn'];
-    h+='<div class="row"><div><b>'+a.pallets+' '+t('pallets')+' '+esc(pname(a))+'</b><div class="sub2">'+esc(a.location)+' · '+t('pickup_pre')+' '+fmtD(a.pickup_date)+'</div>'
+  const T=todayStr();
+  const rowG=a=>{
+    const late=a.status==='announced'&&a.pickup_date<=T;
+    const st=a.status==='picked_up'?[t('st_picked'),'b-ok']:a.status==='cancelled'?[t('st_cancelled'),'b-grey']:a.route_id?[t('st_planned'),'b-ok']:[t('st_announced'),'b-warn'];
+    return '<div class="row'+(a.status==='cancelled'?' dim':'')+'"><div><b>'+plt(a.pallets)+' '+esc(pname(a))+'</b><div class="sub2">'+esc(a.location)+' · '+t('pickup_pre')+' '+fmtD(a.pickup_date)+'</div>'
       +(a.truck_alert?'<div class="sub2" style="color:var(--warn);font-weight:600">'+t('alert_sent_line')+'</div>'
         :(late?'<button class="truck" onclick="truck(\''+a.id+'\')">'+t('truck_btn')+'</button>':''))
       +(a.status==='announced'?'<div class="acts"><button class="btn tiny" onclick="editAnn(\''+a.id+'\')">'+t('edit_btn')+'</button>'
-        +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="cancelAnnG(\''+a.id+'\')">'+t('cancel_btn')+'</button></div>':'')
+        +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="cancelAnnG(\''+a.id+'\')">'+(pend==='ca:'+a.id?t('sure_btn'):t('cancel_btn'))+'</button></div>':'')
       +'</div><span class="badge '+st[1]+'">'+st[0]+'</span></div>';
-  });
-  h+='</div><p class="muted" style="margin-top:12px;text-align:center">'+t('footer_g')+'</p>';
+  };
+  const act=A.filter(a=>a.status==='announced'||(a.status==='picked_up'&&a.pickup_date>=T)).sort((x,y)=>x.pickup_date.localeCompare(y.pickup_date));
+  const old=A.filter(a=>!(a.status==='announced'||(a.status==='picked_up'&&a.pickup_date>=T))).sort((x,y)=>y.pickup_date.localeCompare(x.pickup_date));
+  h+='<div class="card"><h2>'+t('my_ann')+'</h2>';
+  if(!A.length)h+='<div class="muted">'+t('no_ann')+'</div>';
+  act.forEach(a=>{h+=rowG(a)});
+  if(old.length)h+='<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">'+t('past_ann')+' ('+old.length+')</summary>'+old.map(rowG).join('')+'</details>';
+  h+='</div>';
+  let standalone=false;try{standalone=!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)}catch(e){}
+  let instOff=null;try{instOff=localStorage.getItem('mb-inst')}catch(e){}
+  if(!standalone&&instOff!=='1'){
+    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
+    h+='<div class="card" style="display:flex;gap:10px;align-items:flex-start"><div style="flex:1">'+t(ios?'inst_ios':'inst_other')+'</div>'
+      +'<button onclick="dismissInst()" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--grey)">✕</button></div>';
+  }
+  h+='<p class="muted" style="margin-top:12px;text-align:center">'+t('footer_g')+'</p>';
   el('app').innerHTML=h;
 }
+function dismissInst(){try{localStorage.setItem('mb-inst','1')}catch(e){}renderGrower()}
 function pick(k,v){sel.note=el('note')?el('note').value:sel.note;
   sel[k==='loc'?'loc':k==='prod'?'prod':'date']=(sel[k==='loc'?'loc':k==='prod'?'prod':'date']===v&&k!=='loc')?null:v;renderGrower()}
 function adj(d){sel.note=el('note')?el('note').value:sel.note;sel.pallets=Math.min(66,Math.max(1,sel.pallets+d));renderGrower()}
@@ -321,7 +350,13 @@ function sameAgain(){
   renderGrower();
 }
 async function cancelAnnG(id){
-  if(!confirm(t('confirm_cancel')))return;
+  sel.note=el('note')?el('note').value:sel.note;
+  if(pend!=='ca:'+id){
+    pend='ca:'+id;renderGrower();
+    setTimeout(()=>{if(pend==='ca:'+id){pend=null;if(G_TOKEN&&CTX)renderGrower()}},4000);
+    return;
+  }
+  pend=null;
   try{await rpc('cancel_announcement',{p_token:G_TOKEN,p_announcement:id});
     toast(t('toast_cancelled'));
     if(sel.editing===id)stopEdit();
@@ -333,7 +368,7 @@ async function submitAnn(){
   try{
     const wasEdit=!!sel.editing;
     const loc=CTX.locations.find(l=>l.id===sel.loc), pr=CTX.products.find(p=>p.id===sel.prod);
-    const txt=sel.pallets+' '+t('pallets')+' '+(pr?(LANG==='en'?pr.name_en:pr.name_nl):'')+' · '+(loc?loc.name:'')+' · '+fmtFriendly(sel.date);
+    const txt=plt(sel.pallets)+' '+(pr?(LANG==='en'?pr.name_en:pr.name_nl):'')+' · '+(loc?loc.name:'')+' · '+fmtFriendly(sel.date);
     if(wasEdit){
       await rpc('update_announcement',{p_token:G_TOKEN,p_announcement:sel.editing,p_pallets:sel.pallets,p_pickup_date:sel.date,p_product:sel.prod,p_note:el('note').value});
     }else{
@@ -350,7 +385,15 @@ async function truck(id){
 }
 
 /* ---------- ADMIN (Manon) ---------- */
-let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null, gOpen={};
+let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null, gOpen={}, pWeek=0;
+function weekDays(off){
+  const now=new Date(todayStr()+'T12:00:00');
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()===0?7:now.getDay())-1)+off*7);
+  const out=[];
+  for(let i=0;i<7;i++){const c=new Date(mon);c.setDate(mon.getDate()+i);const s=ymd(c);if(s>=todayStr())out.push(s)}
+  return out;
+}
+function wkNav(d){pWeek=Math.max(0,pWeek+d);renderAdmin()}
 async function loadAdmin(){
   try{ADM=await rpc('admin_overview',{p_token:A_TOKEN});}catch(e){return fail(e.message)}
   ADM.settings=ADM.settings||{};ADM.routes=ADM.routes||[];
@@ -363,7 +406,7 @@ function renderAdmin(){
   let h='';
   h+='<div class="card"><h2>'+t('alerts_h')+(open.length?' <span class="badge b-bad">'+open.length+' '+t('open')+'</span>':'')+'</h2>';
   if(!open.length)h+='<div class="muted">'+t('no_alerts')+'</div>';
-  open.forEach(e=>{h+='<div class="row"><div><b>'+t('truck_btn')+'</b><div class="sub2">'+esc(e.grower)+' · '+esc(e.location)+' · '+e.pallets+' '+t('pallets')+' · '+t('pickup_pre')+' '+fmtD(e.pickup_date)+'</div>'
+  open.forEach(e=>{h+='<div class="row"><div><b>'+t('truck_btn')+'</b><div class="sub2">'+esc(e.grower)+' · '+esc(e.location)+' · '+plt(e.pallets)+' · '+t('pickup_pre')+' '+fmtD(e.pickup_date)+'</div>'
     +(e.message?'<div class="sub2">“'+esc(e.message)+'”</div>':'')+'</div>'
     +'<button class="btn tiny" onclick="resolveExc(\''+e.id+'\')">'+t('resolved_btn')+'</button></div>';});
   h+='</div>';
@@ -371,12 +414,18 @@ function renderAdmin(){
   const T=todayStr();
   const ann=ADM.announcements.filter(a=>a.status!=='cancelled'||a.change_flag==='cancelled');
   const upc=ann.filter(a=>a.pickup_date>=T), past=ann.filter(a=>a.pickup_date<T);
-  const days=[...new Set([...upc.map(a=>a.pickup_date),...ADM.routes.filter(r=>r.date>=T).map(r=>r.date)])].sort();
+  const wdays=weekDays(pWeek);
+  const wkLbl=pWeek===0?t('this_week'):pWeek===1?t('next_week'):fmtD(wdays[0])+' – '+fmtD(wdays[wdays.length-1]);
   h+='<div class="card"><h2>'+t('planner_h')+'</h2>';
-  if(!days.length)h+='<div class="muted">'+t('no_plan')+'</div>';
-  days.forEach(d=>{
-    h+='<div class="dayhead"><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
-    ADM.routes.filter(r=>r.date===d).forEach(r=>{
+  h+='<div class="dayhead" style="margin-top:4px"><button class="btn tiny sub" '+(pWeek===0?'disabled':'')+' onclick="wkNav(-1)">‹</button>'
+    +'<b>'+wkLbl+'</b><button class="btn tiny sub" onclick="wkNav(1)">›</button></div>';
+  wdays.forEach(d=>{
+    const rts=ADM.routes.filter(r=>r.date===d);
+    const dun=upc.filter(a=>a.pickup_date===d&&!a.route_id);
+    const has=rts.length||dun.length||(rForm&&!rForm.id&&rForm.date===d);
+    h+='<div class="dayhead"'+(has?'':' style="opacity:.55;margin-bottom:2px"')+'><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
+    if(!has)return;
+    rts.forEach(r=>{
       if(rForm&&rForm.id===r.id){h+=routeFormHTML();return;}
       const on=upc.filter(a=>a.route_id===r.id);
       const tot=on.filter(a=>a.status!=='cancelled').reduce((s,a)=>s+a.pallets,0);
@@ -388,11 +437,10 @@ function renderAdmin(){
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
         +on.map(a=>annCard(a,d)).join('')
         +'<div class="acts"><button class="btn tiny sub" onclick="editRoute(\''+r.id+'\')">✏️</button>'
-        +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">🗑</button></div></div>';
+        +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">'+(pend==='dr:'+r.id?t('sure_btn'):'🗑')+'</button></div></div>';
     });
     if(rForm&&!rForm.id&&rForm.date===d)h+=routeFormHTML();
-    const un=upc.filter(a=>a.pickup_date===d&&!a.route_id);
-    if(un.length)h+='<div class="pool"><b>'+t('pool')+' ('+un.length+')</b>'+un.map(a=>annCard(a,d)).join('')+'</div>';
+    if(dun.length)h+='<div class="pool"><b>'+t('pool')+' ('+dun.length+')</b>'+dun.map(a=>annCard(a,d)).join('')+'</div>';
   });
   if(past.length){
     h+='<details style="margin-top:12px"><summary>'+t('past_ann')+' ('+past.length+')</summary>';
@@ -462,7 +510,7 @@ function annCard(a,d){
     +(a.open_alert?' <span class="badge b-bad">'+t('b_alert')+'</span>':'')
     +(a.change_flag==='updated'?' <span class="badge b-warn">'+t('b_changed')+'</span>':'')
     +(cancelled?' <span class="badge b-bad">'+t('b_cancelled_by')+'</span>':'')
-    +'<div class="sub2">'+a.pallets+' '+t('pallets')+' '+esc(pname(a))+' · '+esc(a.location)+(a.note?' · “'+esc(a.note)+'”':'')+'</div></div>'
+    +'<div class="sub2">'+plt(a.pallets)+' '+esc(pname(a))+' · '+esc(a.location)+(a.note?' · “'+esc(a.note)+'”':'')+'</div></div>'
     +'<span class="badge '+st[1]+'">'+st[0]+'</span></div>';
   let acts='';
   if(a.status==='announced')acts+='<button class="btn tiny" onclick="setSt(\''+a.id+'\',\'picked_up\')">'+t('picked_btn')+'</button>';
@@ -501,7 +549,12 @@ async function saveRoute(){
     rForm=null;toast(t(f.id?'toast_route_upd':'toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function delRoute(id){
-  if(!confirm(t('confirm_del_route')))return;
+  if(pend!=='dr:'+id){
+    pend='dr:'+id;renderAdmin();
+    setTimeout(()=>{if(pend==='dr:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},4000);
+    return;
+  }
+  pend=null;
   try{await rpc('admin_delete_route',{p_token:A_TOKEN,p_route:id});toast(t('toast_route_del'));await loadAdmin();}catch(e){toast(e.message)}
 }
 async function setCap(){
