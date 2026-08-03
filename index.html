@@ -43,6 +43,9 @@ textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10
 .btn.sub{background:#fff;color:var(--berry);border:1.5px solid var(--berry);padding:10px;font-size:14px;width:auto;display:inline-block;margin-top:8px}
 .btn.tiny{padding:7px 12px;font-size:13px;margin:0;width:auto;display:inline-block}
 .row{border-top:1px solid var(--line);padding:12px 2px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.row.editing{background:var(--berry-l);border-left:3px solid var(--berry);padding-left:8px;border-radius:6px}
+.dupwarn{background:var(--warn-l);color:var(--warn);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:14px}
+.dupwarn a{color:var(--warn);font-weight:700}
 .row:first-child{border-top:0}
 .row b{font-size:15px}
 .row .sub2{color:var(--grey);font-size:13px;margin-top:2px}
@@ -111,6 +114,7 @@ nl:{
   location:'Locatie', product:'Product', pallets_n:'Aantal pallets', pallets:'pallets',
   pickup_day:'Ophaaldag', no_days:'Nog geen ophaaldagen beschikbaar voor deze locatie. Miss Berry stelt deze in.', pick_loc:'Kies eerst een locatie.',
   note_lbl:'Opmerking (optioneel)', note_ph:'Bijv. bijzonderheden over de partij',
+  dup_a:'Je hebt al', dup_b:'aangemeld voor deze dag.', dup_edit:'Die aanpassen?', editing_b:'✏️ bezig met bewerken',
   save_change:'Wijziging opslaan', submit:'Aanmelden', no_edit:'Niet wijzigen',
   my_ann:'Mijn aanmeldingen', no_ann:'Nog geen aanmeldingen.',
   st_picked:'Opgehaald', st_cancelled:'Geannuleerd', st_announced:'Aangemeld',
@@ -159,6 +163,7 @@ en:{
   location:'Location', product:'Product', pallets_n:'Number of pallets', pallets:'pallets',
   pickup_day:'Pickup day', no_days:'No pickup days available for this location yet. Miss Berry sets these.', pick_loc:'Choose a location first.',
   note_lbl:'Note (optional)', note_ph:'E.g. details about the batch',
+  dup_a:'You already announced', dup_b:'for this day.', dup_edit:'Edit that one?', editing_b:'✏️ being edited',
   save_change:'Save changes', submit:'Submit', no_edit:'Discard changes',
   my_ann:'My announcements', no_ann:'No announcements yet.',
   st_picked:'Picked up', st_cancelled:'Cancelled', st_announced:'Announced',
@@ -293,6 +298,10 @@ function renderGrower(){
     :'<div class="muted">'+(loc?t('no_days'):t('pick_loc'))+'</div>';
   h+='<div class="lbl">'+t('note_lbl')+'</div><textarea id="note" rows="1" placeholder="'+t('note_ph')+'">'+esc(sel.note||'')+'</textarea>';
   const ready=sel.loc&&sel.prod&&sel.date&&sel.pallets>0;
+  if(!sel.editing&&sel.loc&&sel.date){
+    const dup=A.find(a=>a.status==='announced'&&a.location_id===sel.loc&&a.pickup_date===sel.date);
+    if(dup)h+='<div class="dupwarn">⚠️ '+t('dup_a')+' '+plt(dup.pallets)+' '+esc(pname(dup))+' '+t('dup_b')+' <a href="#" onclick="editAnn(\''+dup.id+'\');return false">'+t('dup_edit')+'</a></div>';
+  }
   h+='<button class="btn" id="sub" '+(ready?'':'disabled')+' onclick="submitAnn()">'+(sel.editing?t('save_change'):t('submit'))+'</button>';
   if(!ready){
     const miss=[];if(!sel.loc)miss.push(t('location'));if(!sel.prod)miss.push(t('product'));if(!sel.date)miss.push(t('pickup_day'));
@@ -306,7 +315,8 @@ function renderGrower(){
   const rowG=a=>{
     const late=a.status==='announced'&&a.pickup_date<=T;
     const st=a.status==='picked_up'?[t('st_picked'),'b-ok']:a.status==='cancelled'?[t('st_cancelled'),'b-grey']:a.route_id?[t('st_planned'),'b-ok']:[t('st_announced'),'b-warn'];
-    return '<div class="row'+(a.status==='cancelled'?' dim':'')+'"><div><b>'+plt(a.pallets)+' '+esc(pname(a))+'</b><div class="sub2">'+esc(a.location)+' · '+t('pickup_pre')+' '+fmtD(a.pickup_date)+'</div>'
+    const editing=sel.editing===a.id;
+    return '<div class="row'+(a.status==='cancelled'?' dim':'')+(editing?' editing':'')+'"><div><b>'+plt(a.pallets)+' '+esc(pname(a))+'</b>'+(editing?' <span class="badge b-warn">'+t('editing_b')+'</span>':'')+'<div class="sub2">'+esc(a.location)+' · '+t('pickup_pre')+' '+fmtD(a.pickup_date)+'</div>'
       +(a.truck_alert?'<div class="sub2" style="color:var(--warn);font-weight:600">'+t('alert_sent_line')+'</div>'
         :(late?'<button class="truck" onclick="truck(\''+a.id+'\')">'+t('truck_btn')+'</button>':''))
       +(a.status==='announced'?'<div class="acts"><button class="btn tiny" onclick="editAnn(\''+a.id+'\')">'+t('edit_btn')+'</button>'
@@ -353,7 +363,7 @@ async function cancelAnnG(id){
   sel.note=el('note')?el('note').value:sel.note;
   if(pend!=='ca:'+id){
     pend='ca:'+id;renderGrower();
-    setTimeout(()=>{if(pend==='ca:'+id){pend=null;if(G_TOKEN&&CTX)renderGrower()}},4000);
+    setTimeout(()=>{if(pend==='ca:'+id){pend=null;if(G_TOKEN&&CTX)renderGrower()}},7000);
     return;
   }
   pend=null;
@@ -422,13 +432,13 @@ function renderAdmin(){
     +'<b>'+wkLbl+'</b><button class="btn tiny sub" onclick="wkNav(1)">›</button></div>';
   wdays.forEach(d=>{
     const rts=ADM.routes.filter(r=>r.date===d);
-    const dun=upc.filter(a=>a.pickup_date===d&&!a.route_id);
+    const dun=upc.filter(a=>a.pickup_date===d&&!a.route_id).sort((x,y)=>x.status===y.status?String(x.created_at||'').localeCompare(String(y.created_at||'')):(x.status==='cancelled'?1:-1));
     const has=rts.length||dun.length||(rForm&&!rForm.id&&rForm.date===d);
     h+='<div class="dayhead"'+(has?'':' style="opacity:.55;margin-bottom:2px"')+'><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
     if(!has)return;
     rts.forEach(r=>{
       if(rForm&&rForm.id===r.id){h+=routeFormHTML();return;}
-      const on=upc.filter(a=>a.route_id===r.id);
+      const on=upc.filter(a=>a.route_id===r.id).sort((x,y)=>String(x.created_at||'').localeCompare(String(y.created_at||'')));
       const tot=on.filter(a=>a.status!=='cancelled').reduce((s,a)=>s+a.pallets,0);
       const c=cap(r), pct=Math.min(100,Math.round(tot/c*100));
       const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{const k=pname(a);pm[k]=(pm[k]||0)+a.pallets});
@@ -552,7 +562,7 @@ async function saveRoute(){
 async function delRoute(id){
   if(pend!=='dr:'+id){
     pend='dr:'+id;renderAdmin();
-    setTimeout(()=>{if(pend==='dr:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},4000);
+    setTimeout(()=>{if(pend==='dr:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},7000);
     return;
   }
   pend=null;
