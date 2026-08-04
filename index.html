@@ -101,6 +101,14 @@ try{
   else{const s=JSON.parse(localStorage.getItem('mb-access')||'null');
     if(s){if(s.role==='admin')A_TOKEN=s.token;else G_TOKEN=s.token;}}
 }catch(e){}
+// keep the token in the address bar (restored from storage, strips extras like cb=):
+// iOS "Add to Home Screen" captures the visible URL, so the icon then opens the right view
+try{
+  if(G_TOKEN||A_TOKEN){
+    const q=A_TOKEN?'?admin='+encodeURIComponent(A_TOKEN):'?t='+encodeURIComponent(G_TOKEN);
+    if(location.search!==q)history.replaceState(null,'',q);
+  }
+}catch(e){}
 // dynamic manifest: bake the token into start_url so an installed PWA opens the right view
 // (iOS home-screen apps have separate localStorage, so the launch URL must carry the token)
 try{
