@@ -87,7 +87,7 @@ details summary .muted{margin-left:auto;padding-right:8px}
 .tbtn.warn{color:var(--bad)}
 .locd{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
 .locd summary{font-size:14px}
-details summary::after{content:"▾";color:var(--grey)}
+details summary::after{content:"▾";color:var(--grey);font-size:22px;line-height:1;margin-left:8px}
 details[open] summary::after{content:"▴"}
 .subbox{background:#faf7f8;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}
 .sublbl{font-weight:600;font-size:14px}
@@ -162,7 +162,10 @@ nl:{
   alerts_h:'🚨 Meldingen', open:'open', no_alerts:'Geen open meldingen. 🎉', resolved_btn:'Opgelost',
   planner_h:'📅 Weekplanner', no_plan:'Nog geen aanmeldingen of routes.', today:'vandaag',
   new_route:'+ Nieuwe route', pool:'📥 Nog niet ingedeeld', past_ann:'Eerdere aanmeldingen',
-  settings_h:'⚙️ Instellingen', save:'Opslaan', cap_hint:'Standaard vrachtwagencapaciteit (pallets)',
+  save:'Opslaan',
+  carriers_h:'🚛 Vervoerders', new_carrier:'+ Nieuwe vervoerder', no_carriers:'Nog geen vervoerders.',
+  f_cname:'Naam vervoerder', f_ccap:'Standaard capaciteit (pallets)',
+  toast_carrier:'Vervoerder opgeslagen', toast_carrier_del:'Vervoerder verwijderd',
   growers_h:'👩‍🌾 Telers & ophaaldagen', loc_one:'locatie', loc_many:'locaties', copy_link:'Kopieer link',
   add_day:'+ Datum', fixed_days:'Vaste ophaaldagen — elke week', extra_days:'Losse extra datums', no_extra:'Geen losse datums gepland.', upcoming:'Eerstvolgende ophaaldagen:', toast_weekly:'Vaste ophaaldagen bijgewerkt', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
   sum_week:'elke ', sum_extra:'extra', sched_none:'nog geen ophaaldagen',
@@ -170,7 +173,6 @@ nl:{
   picked_btn:'✓ Opgehaald', unassign:'↩︎ uit route', to_route:'→ route', ok_seen:'OK, gezien',
   toast_route_new:'Route aangemaakt', toast_route_upd:'Route bijgewerkt', toast_route_del:'Route verwijderd',
   form_open:'Sla het open formulier eerst op (of annuleer het).',
-  bad_cap:'Ongeldige capaciteit', toast_cap:'Capaciteit opgeslagen',
   pick_date_first:'Kies eerst een datum', toast_day_add:'Ophaaldag toegevoegd', toast_day_rm:'Ophaaldag verwijderd', toast_exc:'Melding opgelost',
   p_first_loc_def:'Hoofdlocatie', toast_grower:'Teler toegevoegd', toast_loc:'Locatie toegevoegd',
   toast_copy:'Link gekopieerd — stuur via WhatsApp', p_copy:'Kopieer deze link:',
@@ -211,7 +213,10 @@ en:{
   alerts_h:'🚨 Alerts', open:'open', no_alerts:'No open alerts. 🎉', resolved_btn:'Resolved',
   planner_h:'📅 Week planner', no_plan:'No announcements or routes yet.', today:'today',
   new_route:'+ New route', pool:'📥 Not yet assigned', past_ann:'Past announcements',
-  settings_h:'⚙️ Settings', save:'Save', cap_hint:'Default truck capacity (pallets). Adjustable per route.',
+  save:'Save',
+  carriers_h:'🚛 Carriers', new_carrier:'+ New carrier', no_carriers:'No carriers yet.',
+  f_cname:'Carrier name', f_ccap:'Default capacity (pallets)',
+  toast_carrier:'Carrier saved', toast_carrier_del:'Carrier deleted',
   growers_h:'👩‍🌾 Growers & pickup days', loc_one:'location', loc_many:'locations', copy_link:'Copy link',
   add_day:'+ Date', fixed_days:'Weekly pickup days — every week', extra_days:'One-off extra dates', no_extra:'No one-off dates planned.', upcoming:'Next pickup days:', toast_weekly:'Weekly pickup days updated', add_loc:'+ Add location', new_grower:'+ New grower',
   sum_week:'every ', sum_extra:'extra', sched_none:'no pickup days yet',
@@ -219,7 +224,6 @@ en:{
   picked_btn:'✓ Picked up', unassign:'↩︎ remove from route', to_route:'→ route', ok_seen:'OK, seen',
   toast_route_new:'Route created', toast_route_upd:'Route updated', toast_route_del:'Route deleted',
   form_open:'Save the open form first (or cancel it).',
-  bad_cap:'Invalid capacity', toast_cap:'Capacity saved',
   pick_date_first:'Pick a date first', toast_day_add:'Pickup day added', toast_day_rm:'Pickup day removed', toast_exc:'Alert resolved',
   p_first_loc_def:'Main location', toast_grower:'Grower added', toast_loc:'Location added',
   toast_copy:'Link copied — send via WhatsApp', p_copy:'Copy this link:',
@@ -461,7 +465,7 @@ async function truck(id){
 }
 
 /* ---------- ADMIN (Manon) ---------- */
-let ADM=null, rForm=null, gForm=false, lForm=null, gEdit=null, lEdit=null, gOpen={}, lOpen={}, pWeek=0;
+let ADM=null, rForm=null, gForm=false, lForm=null, gEdit=null, lEdit=null, cForm=null, gOpen={}, lOpen={}, pWeek=0;
 function weekDays(off){
   const now=new Date(todayStr()+'T12:00:00');
   const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()===0?7:now.getDay())-1)+off*7);
@@ -537,10 +541,18 @@ function renderAdmin(){
   h+='</div>';
 
   h+='<div class="cols">';
-  h+='<div class="card"><h2>'+t('settings_h')+'</h2>'
-    +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="muted" style="flex:1;min-width:150px">'+t('cap_hint')+'</span>'
-    +'<input id="capin" value="'+esc(ADM.settings.default_truck_capacity||'44')+'" inputmode="numeric" style="width:64px;text-align:center">'
-    +'<button class="btn tiny sub" style="margin:0" onclick="setCap()">'+t('save')+'</button></div></div>';
+  h+='<div class="card"><h2>'+t('carriers_h')+'</h2>';
+  const cars=ADM.carriers||[];
+  if(!cars.length&&cForm!=='new')h+='<div class="muted">'+t('no_carriers')+'</div>';
+  cars.forEach(c=>{
+    if(cForm===c.id){h+=carrierFormHTML(c);return}
+    h+='<div class="row"><div><b>'+esc(c.name)+'</b>'+(c.capacity?'<div class="sub2">'+c.capacity+' '+t('pallets')+'</div>':'')+'</div>'
+      +'<div class="acts" style="margin:0;gap:14px"><button class="tbtn" onclick="editCarrier(\''+c.id+'\')">'+t('edit_btn')+'</button>'
+      +'<button class="tbtn warn" onclick="delC(\''+c.id+'\')">'+(pend==='dc:'+c.id?t('sure_btn'):t('del_btn'))+'</button></div></div>';
+  });
+  if(cForm==='new')h+=carrierFormHTML(null);
+  else h+='<div style="margin-top:10px"><button class="btn sub" onclick="cForm=\'new\';renderAdmin();const i=el(\'cf-name\');if(i)i.focus()">'+t('new_carrier')+'</button></div>';
+  h+='</div>';
 
   h+='<div class="card"><h2>'+t('growers_h')+'</h2>';
   ADM.growers.forEach(g=>{
@@ -619,7 +631,7 @@ function renderAdmin(){
     if(x.tagName==='SELECT'){if([...x.options].some(o=>o.value===v))x.value=v}
     else x.value=v});
 }
-function cap(r){return r.capacity||parseInt(ADM.settings.default_truck_capacity||'44',10)}
+function cap(r){if(r.capacity)return r.capacity;const c=(ADM.carriers||[]).find(x=>x.id===r.carrier_id);return (c&&c.capacity)||44}
 function annCard(a,d){
   const cancelled=a.status==='cancelled';
   const cls=cancelled?' cflag':(a.change_flag==='updated'?' flag':'');
@@ -650,13 +662,20 @@ function routeFormHTML(){
   const r=rForm.id?ADM.routes.find(x=>x.id===rForm.id):null;
   return '<div class="route"><div class="grid2">'
     +'<input type="text" id="rf-name" placeholder="'+t('f_route_name')+'" value="'+esc(r?r.name:'')+'">'
-    +'<input type="text" id="rf-carrier" placeholder="'+t('f_carrier')+'" value="'+esc(r&&r.carrier?r.carrier:'')+'">'
+    +'<select id="rf-carrier" onchange="carSel()"><option value="">'+t('f_carrier')+'</option>'
+    +(ADM.carriers||[]).map(c=>'<option value="'+c.id+'"'+(r&&r.carrier_id===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select>'
     +'</div><div class="grid2" style="margin-top:8px">'
-    +'<input type="text" id="rf-cap" inputmode="numeric" placeholder="'+t('f_cap')+'" value="'+esc(r&&r.capacity?String(r.capacity):(ADM.settings.default_truck_capacity||'44'))+'"><div></div></div>'
+    +'<input type="text" id="rf-cap" inputmode="numeric" placeholder="'+t('f_cap')+'" value="'+esc(r&&r.capacity?String(r.capacity):rfDefCap(r))+'"><div></div></div>'
     +'<div class="acts"><button class="btn tiny" onclick="saveRoute()">'+t('save')+'</button>'
     +'<button class="btn tiny sub" onclick="rForm=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
 }
-function rDirty(){return !!rForm&&['rf-name','rf-carrier','rf-cap'].some(id=>{const i=el(id);return i&&i.value!==i.defaultValue})}
+function rfDefCap(r){const c=(ADM.carriers||[]).find(x=>x.id===(r&&r.carrier_id));return c&&c.capacity?String(c.capacity):''}
+function carSel(){const st=el('rf-carrier');const c=(ADM.carriers||[]).find(x=>x.id===st.value);const i=el('rf-cap');if(i)i.value=c&&c.capacity!=null?String(c.capacity):''}
+function rDirty(){if(!rForm)return false;
+  for(const id of ['rf-name','rf-cap']){const i=el(id);if(i&&i.value!==i.defaultValue)return true}
+  const st=el('rf-carrier');
+  if(st){const d=[...st.options].find(o=>o.defaultSelected);if((d?d.value:'')!==st.value)return true}
+  return false}
 function newRoute(d){
   if(rForm&&(rForm.id!==null||rForm.date!==d)&&rDirty()){toast(t('form_open'));const i=el('rf-name');if(i)i.focus();return}
   rForm={id:null,date:d};renderAdmin();const i=el('rf-name');if(i)i.focus()}
@@ -665,11 +684,11 @@ function editRoute(id){const r=ADM.routes.find(x=>x.id===id);if(!r)return;
   rForm={id:id,date:r.date};renderAdmin();const i=el('rf-name');if(i)i.focus()}
 async function saveRoute(){
   const n=el('rf-name').value.trim();if(!n)return toast(t('name_req'));
-  const c=el('rf-carrier').value.trim();
+  const c=el('rf-carrier').value||null;
   const cp=parseInt(el('rf-cap').value,10);
   const f=rForm;
   if(busy)return;busy=true;
-  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:f.id,p_date:f.date,p_name:n,p_carrier:c,p_capacity:cp>0?cp:null});
+  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:f.id,p_date:f.date,p_name:n,p_carrier_id:c,p_capacity:cp>0?cp:null});
     rForm=null;toast(t(f.id?'toast_route_upd':'toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
 async function delRoute(id){
@@ -682,11 +701,31 @@ async function delRoute(id){
   if(busy)return;busy=true;
   try{await rpc('admin_delete_route',{p_token:A_TOKEN,p_route:id});toast(t('toast_route_del'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
-async function setCap(){
-  const v=parseInt(el('capin').value,10);
-  if(!v||v<1||v>100)return toast(t('bad_cap'));
+function carrierFormHTML(c){
+  return '<div class="route" style="margin-top:8px"><div class="grid2">'
+    +'<input type="text" id="cf-name" placeholder="'+t('f_cname')+'" value="'+esc(c?c.name:'')+'">'
+    +'<input type="text" id="cf-cap" inputmode="numeric" placeholder="'+t('f_ccap')+'" value="'+esc(c&&c.capacity?String(c.capacity):'')+'"></div>'
+    +'<div class="acts"><button class="btn tiny" onclick="saveCarrier()">'+t('save')+'</button>'
+    +'<button class="btn tiny sub" onclick="cForm=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
+}
+function editCarrier(id){cForm=id;renderAdmin();const i=el('cf-name');if(i)i.focus()}
+async function saveCarrier(){
+  const n=el('cf-name').value.trim();if(!n)return toast(t('name_req'));
+  const cp=parseInt(el('cf-cap').value,10);
+  const f=cForm;
   if(busy)return;busy=true;
-  try{await rpc('admin_set_setting',{p_token:A_TOKEN,p_key:'default_truck_capacity',p_value:String(v)});toast(t('toast_cap'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
+  try{await rpc('admin_upsert_carrier',{p_token:A_TOKEN,p_carrier:f==='new'?null:f,p_name:n,p_capacity:cp>0?cp:null});
+    cForm=null;toast(t('toast_carrier'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
+}
+async function delC(id){
+  if(pend!=='dc:'+id){
+    pend='dc:'+id;renderAdmin();
+    setTimeout(()=>{if(pend==='dc:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},7000);
+    return;
+  }
+  pend=null;
+  if(busy)return;busy=true;
+  try{await rpc('admin_delete_carrier',{p_token:A_TOKEN,p_carrier:id});toast(t('toast_carrier_del'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
 function dset(l){return (ADM.growers.flatMap(g=>g.locations).find(x=>x.id===l)?.pickup_dates||[]).filter(d=>d.active).map(d=>d.date)}
 async function addDate(lid){
@@ -804,7 +843,7 @@ function idleRefresh(){
   const ae=document.activeElement;
   if(ae&&['TEXTAREA','INPUT','SELECT'].includes(ae.tagName))return;
   if(G_TOKEN){if(!sel.editing&&!sel.prod&&!sel.date){sel.note=el('note')?el('note').value:sel.note;loadGrower()}}
-  else if(A_TOKEN){if(!rForm&&!gForm&&!lForm&&!gEdit&&!lEdit)loadAdmin()}
+  else if(A_TOKEN){if(!rForm&&!gForm&&!lForm&&!gEdit&&!lEdit&&!cForm)loadAdmin()}
 }
 setInterval(idleRefresh,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleRefresh()});
