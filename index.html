@@ -174,7 +174,7 @@ nl:{
   f_route_name:'Naam route (bv. Route Limburg)', f_carrier:'Vervoerder (optioneel)', f_cap:'Capaciteit (pallets)',
   f_gname:'Naam teler (bedrijfsnaam)', f_contact:'Contactpersoon (optioneel)', f_phone:'Telefoon (optioneel)',
   f_lname:'Naam locatie', f_addr:'Adres (optioneel)', name_req:'Naam is verplicht',
-  deact_btn:'Deactiveren', react_btn:'Heractiveren', inactive_lbl:'inactief', toast_upd:'Opgeslagen ✓',
+  del_btn:'Verwijderen', inactive_lbl:'inactief', toast_upd:'Opgeslagen ✓', toast_del:'Verwijderd ✓',
   pallet_one:'pallet', missing_pre:'Kies nog:', sure_btn:'Zeker weten?', st_planned:'Ingepland ✓',
   this_week:'Deze week', next_week:'Volgende week',
   inst_ios:'📲 Zet dit portaal op je beginscherm: tik op Delen (in Chrome: menu ⋮ → Delen) en kies “Zet op beginscherm”.',
@@ -225,7 +225,7 @@ en:{
   f_route_name:'Route name (e.g. Route Limburg)', f_carrier:'Carrier (optional)', f_cap:'Capacity (pallets)',
   f_gname:'Grower name (company)', f_contact:'Contact person (optional)', f_phone:'Phone (optional)',
   f_lname:'Location name', f_addr:'Address (optional)', name_req:'Name is required',
-  deact_btn:'Deactivate', react_btn:'Reactivate', inactive_lbl:'inactive', toast_upd:'Saved ✓',
+  del_btn:'Delete', inactive_lbl:'inactive', toast_upd:'Saved ✓', toast_del:'Deleted ✓',
   pallet_one:'pallet', missing_pre:'Still to choose:', sure_btn:'Are you sure?', st_planned:'Scheduled ✓',
   this_week:'This week', next_week:'Next week',
   inst_ios:'📲 Add this portal to your home screen: tap Share (in Chrome: menu ⋮ → Share) and choose “Add to Home Screen”.',
@@ -523,9 +523,7 @@ function renderAdmin(){
       h+='<div class="linkbox">'+t('portal_link')+': '+location.origin+location.pathname+'?t='+g.token+'</div>'
         +'<div class="acts"><button class="btn tiny sub" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>'
         +'<button class="btn tiny sub" onclick="editGrower(\''+g.id+'\')">'+t('edit_btn')+'</button>'
-        +(ginact
-          ?'<button class="btn tiny sub" onclick="setGrowerActive(\''+g.id+'\',true)">'+t('react_btn')+'</button>'
-          :'<button class="btn tiny sub" onclick="deactG(\''+g.id+'\')">'+(pend==='dg:'+g.id?t('sure_btn'):t('deact_btn'))+'</button>')
+        +'<button class="btn tiny sub" onclick="delG(\''+g.id+'\')">'+(pend==='dg:'+g.id?t('sure_btn'):t('del_btn'))+'</button>'
         +'</div>';
     }
     g.locations.forEach(l=>{
@@ -540,9 +538,7 @@ function renderAdmin(){
       }
       h+='<h3'+(linact?' class="dim"':'')+'>'+esc(l.name)+(linact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+'</h3><div class="muted">'+esc(l.address||'')+'</div>';
       h+='<div class="acts" style="margin:4px 0 6px"><button class="btn tiny sub" onclick="editLoc(\''+l.id+'\')">'+t('edit_btn')+'</button>'
-        +(linact
-          ?'<button class="btn tiny sub" onclick="setLocActive(\''+l.id+'\',\''+g.id+'\',true)">'+t('react_btn')+'</button>'
-          :'<button class="btn tiny sub" onclick="deactL(\''+l.id+'\',\''+g.id+'\')">'+(pend==='dl:'+l.id?t('sure_btn'):t('deact_btn'))+'</button>')
+        +'<button class="btn tiny sub" onclick="delL(\''+l.id+'\')">'+(pend==='dl:'+l.id?t('sure_btn'):t('del_btn'))+'</button>'
         +'</div>';
       if(linact)return;
       h+='<div class="subbox"><div class="sublbl">'+t('fixed_days')+'</div>'
@@ -680,15 +676,14 @@ async function saveGrowerEdit(id){
     gEdit=null;toast(t('toast_upd'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
-function deactG(id){
+function delG(id){
   if(pend!=='dg:'+id){pend='dg:'+id;renderAdmin();
     setTimeout(()=>{if(pend==='dg:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},7000);return}
-  pend=null;setGrowerActive(id,false);
+  pend=null;doDelG(id);
 }
-async function setGrowerActive(id,on){
-  const g=ADM.growers.find(x=>x.id===id);if(!g)return;
-  try{await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:id,p_name:g.name,p_contact:g.contact||'',p_phone:g.phone||'',p_active:on});
-    toast(t('toast_upd'));await loadAdmin();
+async function doDelG(id){
+  try{await rpc('admin_delete_grower',{p_token:A_TOKEN,p_id:id});
+    toast(t('toast_del'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
 function editLoc(id){lEdit=id;gEdit=null;renderAdmin();const i=el('le-name');if(i)i.focus()}
@@ -699,15 +694,14 @@ async function saveLocEdit(id,gid){
     lEdit=null;toast(t('toast_upd'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
-function deactL(id,gid){
+function delL(id){
   if(pend!=='dl:'+id){pend='dl:'+id;renderAdmin();
     setTimeout(()=>{if(pend==='dl:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},7000);return}
-  pend=null;setLocActive(id,gid,false);
+  pend=null;doDelL(id);
 }
-async function setLocActive(id,gid,on){
-  const g=ADM.growers.find(x=>x.id===gid);const l=g&&g.locations.find(x=>x.id===id);if(!l)return;
-  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:id,p_grower:gid,p_name:l.name,p_address:l.address||'',p_active:on});
-    toast(t('toast_upd'));await loadAdmin();
+async function doDelL(id){
+  try{await rpc('admin_delete_location',{p_token:A_TOKEN,p_id:id});
+    toast(t('toast_del'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
 function addLoc(gid){lForm=gid;renderAdmin();const i=el('lf-name');if(i)i.focus()}
