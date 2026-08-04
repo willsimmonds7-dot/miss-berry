@@ -82,6 +82,7 @@ select{border:1.5px solid var(--line);border-radius:10px;padding:8px;font:inheri
 .spin{text-align:center;color:var(--grey);padding:40px 0}
 details{border-top:1px solid var(--line);padding:10px 2px}
 details summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details summary .muted{margin-left:auto;padding-right:8px}
 details summary::after{content:"▾";color:var(--grey)}
 details[open] summary::after{content:"▴"}
 .subbox{background:#faf7f8;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}
@@ -173,6 +174,7 @@ nl:{
   f_route_name:'Naam route (bv. Route Limburg)', f_carrier:'Vervoerder (optioneel)', f_cap:'Capaciteit (pallets)',
   f_gname:'Naam teler (bedrijfsnaam)', f_contact:'Contactpersoon (optioneel)', f_phone:'Telefoon (optioneel)',
   f_lname:'Naam locatie', f_addr:'Adres (optioneel)', name_req:'Naam is verplicht',
+  deact_btn:'Deactiveren', react_btn:'Heractiveren', inactive_lbl:'inactief', toast_upd:'Opgeslagen ✓',
   pallet_one:'pallet', missing_pre:'Kies nog:', sure_btn:'Zeker weten?', st_planned:'Ingepland ✓',
   this_week:'Deze week', next_week:'Volgende week',
   inst_ios:'📲 Zet dit portaal op je beginscherm: tik op Delen (in Chrome: menu ⋮ → Delen) en kies “Zet op beginscherm”.',
@@ -223,6 +225,7 @@ en:{
   f_route_name:'Route name (e.g. Route Limburg)', f_carrier:'Carrier (optional)', f_cap:'Capacity (pallets)',
   f_gname:'Grower name (company)', f_contact:'Contact person (optional)', f_phone:'Phone (optional)',
   f_lname:'Location name', f_addr:'Address (optional)', name_req:'Name is required',
+  deact_btn:'Deactivate', react_btn:'Reactivate', inactive_lbl:'inactive', toast_upd:'Saved ✓',
   pallet_one:'pallet', missing_pre:'Still to choose:', sure_btn:'Are you sure?', st_planned:'Scheduled ✓',
   this_week:'This week', next_week:'Next week',
   inst_ios:'📲 Add this portal to your home screen: tap Share (in Chrome: menu ⋮ → Share) and choose “Add to Home Screen”.',
@@ -434,7 +437,7 @@ async function truck(id){
 }
 
 /* ---------- ADMIN (Manon) ---------- */
-let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null, gOpen={}, pWeek=0;
+let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null, gEdit=null, lEdit=null, gOpen={}, pWeek=0;
 function weekDays(off){
   const now=new Date(todayStr()+'T12:00:00');
   const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()===0?7:now.getDay())-1)+off*7);
@@ -506,12 +509,42 @@ function renderAdmin(){
 
   h+='<div class="card"><h2>'+t('growers_h')+'</h2>';
   ADM.growers.forEach(g=>{
-    h+='<details'+(gOpen[g.id]===false?'':' open')+' ontoggle="gOpen[\''+g.id+'\']=this.open"><summary>'+esc(g.name)+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
-    h+='<div class="muted" style="margin:6px 0">'+esc(g.contact||'')+(g.phone?' · '+esc(g.phone):'')+'</div>';
-    h+='<div class="linkbox">'+t('portal_link')+': '+location.origin+location.pathname+'?t='+g.token+'</div>'
-      +'<button class="btn sub" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>';
+    const ginact=g.active===false;
+    h+='<details'+(gOpen[g.id]===false?'':' open')+' ontoggle="gOpen[\''+g.id+'\']=this.open"><summary>'+esc(g.name)+(ginact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
+    if(gEdit===g.id){
+      h+='<div class="route" style="margin-top:8px"><div class="grid2">'
+        +'<input type="text" id="ge-name" value="'+esc(g.name)+'">'
+        +'<input type="text" id="ge-contact" value="'+esc(g.contact||'')+'" placeholder="'+t('f_contact')+'"></div>'
+        +'<div class="grid2" style="margin-top:8px"><input type="tel" id="ge-phone" value="'+esc(g.phone||'')+'" placeholder="'+t('f_phone')+'"></div>'
+        +'<div class="acts"><button class="btn tiny" onclick="saveGrowerEdit(\''+g.id+'\')">'+t('save')+'</button>'
+        +'<button class="btn tiny sub" onclick="gEdit=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
+    }else{
+      h+='<div class="muted" style="margin:6px 0">'+esc(g.contact||'')+(g.phone?' · '+esc(g.phone):'')+'</div>';
+      h+='<div class="linkbox">'+t('portal_link')+': '+location.origin+location.pathname+'?t='+g.token+'</div>'
+        +'<div class="acts"><button class="btn tiny sub" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>'
+        +'<button class="btn tiny sub" onclick="editGrower(\''+g.id+'\')">'+t('edit_btn')+'</button>'
+        +(ginact
+          ?'<button class="btn tiny sub" onclick="setGrowerActive(\''+g.id+'\',true)">'+t('react_btn')+'</button>'
+          :'<button class="btn tiny sub" onclick="deactG(\''+g.id+'\')">'+(pend==='dg:'+g.id?t('sure_btn'):t('deact_btn'))+'</button>')
+        +'</div>';
+    }
     g.locations.forEach(l=>{
-      h+='<h3>'+esc(l.name)+'</h3><div class="muted">'+esc(l.address||'')+'</div>';
+      const linact=l.active===false;
+      if(lEdit===l.id){
+        h+='<div class="route" style="margin-top:8px"><div class="grid2">'
+          +'<input type="text" id="le-name" value="'+esc(l.name)+'">'
+          +'<input type="text" id="le-addr" value="'+esc(l.address||'')+'" placeholder="'+t('f_addr')+'"></div>'
+          +'<div class="acts"><button class="btn tiny" onclick="saveLocEdit(\''+l.id+'\',\''+g.id+'\')">'+t('save')+'</button>'
+          +'<button class="btn tiny sub" onclick="lEdit=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
+        return;
+      }
+      h+='<h3'+(linact?' class="dim"':'')+'>'+esc(l.name)+(linact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+'</h3><div class="muted">'+esc(l.address||'')+'</div>';
+      h+='<div class="acts" style="margin:4px 0 6px"><button class="btn tiny sub" onclick="editLoc(\''+l.id+'\')">'+t('edit_btn')+'</button>'
+        +(linact
+          ?'<button class="btn tiny sub" onclick="setLocActive(\''+l.id+'\',\''+g.id+'\',true)">'+t('react_btn')+'</button>'
+          :'<button class="btn tiny sub" onclick="deactL(\''+l.id+'\',\''+g.id+'\')">'+(pend==='dl:'+l.id?t('sure_btn'):t('deact_btn'))+'</button>')
+        +'</div>';
+      if(linact)return;
       h+='<div class="subbox"><div class="sublbl">'+t('fixed_days')+'</div>'
         +'<div class="chips wdrow" style="margin-top:6px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((l.weekly_days||[]).includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div>'
         +'<div class="muted" style="margin-top:6px">'+t('fixed_hint')+'</div></div>';
@@ -640,6 +673,43 @@ async function saveGrower(){
     gForm=false;toast(t('toast_grower'));await loadAdmin();
   }catch(e){toast(e.message)}
 }
+function editGrower(id){gEdit=id;lEdit=null;renderAdmin();const i=el('ge-name');if(i)i.focus()}
+async function saveGrowerEdit(id){
+  const g=ADM.growers.find(x=>x.id===id);const n=el('ge-name').value.trim();if(!n)return toast(t('name_req'));
+  try{await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:id,p_name:n,p_contact:el('ge-contact').value.trim(),p_phone:el('ge-phone').value.trim(),p_active:g?g.active!==false:true});
+    gEdit=null;toast(t('toast_upd'));await loadAdmin();
+  }catch(e){toast(e.message)}
+}
+function deactG(id){
+  if(pend!=='dg:'+id){pend='dg:'+id;renderAdmin();
+    setTimeout(()=>{if(pend==='dg:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},7000);return}
+  pend=null;setGrowerActive(id,false);
+}
+async function setGrowerActive(id,on){
+  const g=ADM.growers.find(x=>x.id===id);if(!g)return;
+  try{await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:id,p_name:g.name,p_contact:g.contact||'',p_phone:g.phone||'',p_active:on});
+    toast(t('toast_upd'));await loadAdmin();
+  }catch(e){toast(e.message)}
+}
+function editLoc(id){lEdit=id;gEdit=null;renderAdmin();const i=el('le-name');if(i)i.focus()}
+async function saveLocEdit(id,gid){
+  const n=el('le-name').value.trim();if(!n)return toast(t('name_req'));
+  const g=ADM.growers.find(x=>x.id===gid);const l=g&&g.locations.find(x=>x.id===id);
+  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:id,p_grower:gid,p_name:n,p_address:el('le-addr').value.trim(),p_active:l?l.active!==false:true});
+    lEdit=null;toast(t('toast_upd'));await loadAdmin();
+  }catch(e){toast(e.message)}
+}
+function deactL(id,gid){
+  if(pend!=='dl:'+id){pend='dl:'+id;renderAdmin();
+    setTimeout(()=>{if(pend==='dl:'+id){pend=null;if(A_TOKEN&&ADM)renderAdmin()}},7000);return}
+  pend=null;setLocActive(id,gid,false);
+}
+async function setLocActive(id,gid,on){
+  const g=ADM.growers.find(x=>x.id===gid);const l=g&&g.locations.find(x=>x.id===id);if(!l)return;
+  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:id,p_grower:gid,p_name:l.name,p_address:l.address||'',p_active:on});
+    toast(t('toast_upd'));await loadAdmin();
+  }catch(e){toast(e.message)}
+}
 function addLoc(gid){lForm=gid;renderAdmin();const i=el('lf-name');if(i)i.focus()}
 async function saveLoc(gid){
   const n=el('lf-name').value.trim();if(!n)return toast(t('name_req'));
@@ -685,7 +755,7 @@ function idleRefresh(){
   const ae=document.activeElement;
   if(ae&&['TEXTAREA','INPUT','SELECT'].includes(ae.tagName))return;
   if(G_TOKEN){if(!sel.editing&&!sel.prod&&!sel.date){sel.note=el('note')?el('note').value:sel.note;loadGrower()}}
-  else if(A_TOKEN){if(!rForm&&!gForm&&!lForm)loadAdmin()}
+  else if(A_TOKEN){if(!rForm&&!gForm&&!lForm&&!gEdit&&!lEdit)loadAdmin()}
 }
 setInterval(idleRefresh,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleRefresh()});
