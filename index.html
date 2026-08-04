@@ -175,8 +175,9 @@ nl:{
   f_lname:'Naam locatie', f_addr:'Adres (optioneel)', name_req:'Naam is verplicht',
   pallet_one:'pallet', missing_pre:'Kies nog:', sure_btn:'Zeker weten?', st_planned:'Ingepland ✓',
   this_week:'Deze week', next_week:'Volgende week',
-  inst_ios:'📲 Tip: zet dit portaal op je beginscherm — tik op Delen en kies “Zet op beginscherm”.',
-  inst_other:'📲 Tip: installeer dit portaal als app via het browsermenu (“App installeren”).'
+  inst_ios:'📲 Zet dit portaal op je beginscherm: tik op Delen (in Chrome: menu ⋮ → Delen) en kies “Zet op beginscherm”.',
+  inst_other:'📲 Tip: installeer dit portaal als app via het browsermenu (“App installeren”).',
+  inst_btn:'App installeren', inst_btn_txt:'📲 Installeer dit portaal als app op je telefoon.'
 },
 en:{
   invalid_token:'This link is no longer valid. Please contact Miss Berry.',
@@ -224,8 +225,9 @@ en:{
   f_lname:'Location name', f_addr:'Address (optional)', name_req:'Name is required',
   pallet_one:'pallet', missing_pre:'Still to choose:', sure_btn:'Are you sure?', st_planned:'Scheduled ✓',
   this_week:'This week', next_week:'Next week',
-  inst_ios:'📲 Tip: add this portal to your home screen — tap Share and choose “Add to Home Screen”.',
-  inst_other:'📲 Tip: install this portal as an app via the browser menu (“Install app”).'
+  inst_ios:'📲 Add this portal to your home screen: tap Share (in Chrome: menu ⋮ → Share) and choose “Add to Home Screen”.',
+  inst_other:'📲 Tip: install this portal as an app via the browser menu (“Install app”).',
+  inst_btn:'Install app', inst_btn_txt:'📲 Install this portal as an app on your phone.'
 }};
 function t(k){const v=(I18N[LANG]&&I18N[LANG][k])||I18N.nl[k]||k;
   return typeof v==='string'?v.replace(/^(\S{1,8}) (?=\S)/,function(m,e){return /[A-Za-z0-9+]/.test(e)?m:e+'  '}):v}
@@ -356,17 +358,27 @@ function renderGrower(){
   act.forEach(a=>{h+=rowG(a)});
   if(old.length)h+='<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">'+t('past_ann')+' ('+old.length+')</summary>'+old.map(rowG).join('')+'</details>';
   h+='</div>';
-  let standalone=false;try{standalone=!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)}catch(e){}
-  let instOff=null;try{instOff=localStorage.getItem('mb-inst')}catch(e){}
-  if(!standalone&&instOff!=='1'){
-    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
-    h+='<div class="card" style="display:flex;gap:10px;align-items:flex-start"><div style="flex:1">'+t(ios?'inst_ios':'inst_other')+'</div>'
-      +'<button onclick="dismissInst()" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--grey)">✕</button></div>';
-  }
+  h+=instCard();
   h+='<p class="muted" style="margin-top:12px;text-align:center">'+t('footer_g')+'</p>';
   el('app').innerHTML=h;
 }
-function dismissInst(){try{localStorage.setItem('mb-inst','1')}catch(e){}renderGrower()}
+let instPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();instPrompt=e;
+  try{if(A_TOKEN&&ADM)renderAdmin();else if(G_TOKEN&&CTX)renderGrower()}catch(_){}});
+function instCard(){
+  let standalone=false;try{standalone=!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true}catch(e){}
+  let instOff=null;try{instOff=localStorage.getItem('mb-inst')}catch(e){}
+  if(standalone||instOff==='1')return '';
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  let inner;
+  if(instPrompt)inner='<div style="flex:1">'+t('inst_btn_txt')+'</div><button class="btn" style="width:auto;margin:0;padding:10px 14px;font-size:15px" onclick="doInstall()">'+t('inst_btn')+'</button>';
+  else inner='<div style="flex:1">'+t(ios?'inst_ios':'inst_other')+'</div>';
+  return '<div class="card" style="display:flex;gap:10px;align-items:center">'+inner
+    +'<button onclick="dismissInst()" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--grey)">✕</button></div>';
+}
+function doInstall(){if(instPrompt){instPrompt.prompt();instPrompt=null;}}
+function dismissInst(){try{localStorage.setItem('mb-inst','1')}catch(e){}
+  if(A_TOKEN&&ADM)renderAdmin();else if(CTX)renderGrower()}
 function pick(k,v){sel.note=el('note')?el('note').value:sel.note;
   sel[k==='loc'?'loc':k==='prod'?'prod':'date']=(sel[k==='loc'?'loc':k==='prod'?'prod':'date']===v&&k!=='loc')?null:v;renderGrower()}
 function adj(d){sel.note=el('note')?el('note').value:sel.note;sel.pallets=Math.min(66,Math.max(1,sel.pallets+d));renderGrower()}
@@ -536,6 +548,7 @@ function renderAdmin(){
     h+='<div style="margin-top:12px"><button class="btn sub" onclick="addGrower()">'+t('new_grower')+'</button></div></div>';
   }
   h+='</div>';
+  h+=instCard();
   el('app').innerHTML=h;
 }
 function cap(r){return r.capacity||parseInt(ADM.settings.default_truck_capacity||'44',10)}
