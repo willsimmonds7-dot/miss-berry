@@ -292,8 +292,8 @@ function fmtFriendly(d){
   const diff=Math.round((dt-now)/86400000);
   const wd=(WDF[LANG]||WDF.nl)[(dt.getDay()===0?7:dt.getDay())-1];
   const dm=dt.toLocaleDateString(LANG==='en'?'en-GB':'nl-NL',{day:'numeric',month:'short'});
-  if(diff===0)return t('today_lbl')+' ('+dm+')';
-  if(diff===1)return t('tomorrow')+' ('+dm+')';
+  if(diff===0)return t('today_lbl')+' ('+fmtD(d)+')';
+  if(diff===1)return t('tomorrow')+' ('+fmtD(d)+')';
   if(diff>1&&diff<7)return t('this_pre')+' '+wd+' ('+dm+')';
   if(diff>=7&&diff<14)return t('next_pre')+' '+wd+' ('+dm+')';
   return fmtD(d);
