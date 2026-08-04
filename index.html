@@ -105,10 +105,15 @@ const qs=new URLSearchParams(location.search);
 let G_TOKEN=qs.get('t'), A_TOKEN=qs.get('admin');
 // remember access so the installed app (PWA) works without the link's query string
 try{
-  if(A_TOKEN)localStorage.setItem('mb-access',JSON.stringify({role:'admin',token:A_TOKEN}));
-  else if(G_TOKEN)localStorage.setItem('mb-access',JSON.stringify({role:'grower',token:G_TOKEN}));
-  else{const s=JSON.parse(localStorage.getItem('mb-access')||'null');
-    if(s){if(s.role==='admin')A_TOKEN=s.token;else G_TOKEN=s.token;}}
+  if(A_TOKEN)localStorage.setItem('mb-acc-admin',A_TOKEN);
+  else if(G_TOKEN)localStorage.setItem('mb-acc-grower',G_TOKEN);
+  else{
+    const la=localStorage.getItem('mb-acc-admin'), lg=localStorage.getItem('mb-acc-grower');
+    if(la)A_TOKEN=la;
+    else if(lg)G_TOKEN=lg;
+    else{const s=JSON.parse(localStorage.getItem('mb-access')||'null');
+      if(s){if(s.role==='admin')A_TOKEN=s.token;else G_TOKEN=s.token;}}
+  }
 }catch(e){}
 // keep the token in the address bar (restored from storage, strips extras like cb=):
 // iOS "Add to Home Screen" captures the visible URL, so the icon then opens the right view
@@ -248,7 +253,7 @@ function applyLang(){
   else if(!A_TOKEN&&!G_TOKEN){el('subT').textContent=t('portal_sub');
     const lv=el('lnk')?el('lnk').value:'';showLinkEntry();if(lv)el('lnk').value=lv;}
 }
-let CTX=null, sel={loc:null,prod:null,pallets:2,date:null,editing:null,note:''}, pend=null;
+let CTX=null, sel={loc:null,prod:null,pallets:2,date:null,editing:null,note:''}, pend=null, busy=false, gSeq=0, aSeq=0;
 
 async function rpc(fn,args){
   const r=await fetch(API+fn,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
@@ -266,7 +271,11 @@ function fail(msg){el('app').innerHTML='<div class="center"><div style="font-siz
 
 /* ---------- GROWER PORTAL ---------- */
 async function loadGrower(){
-  try{CTX=await rpc('grower_context',{p_token:G_TOKEN});}catch(e){return fail(e.message)}
+  const q=++gSeq;let c;
+  try{c=await rpc('grower_context',{p_token:G_TOKEN});}
+  catch(e){if(!CTX||e.message===t('invalid_token'))return fail(e.message);return renderGrower()}
+  if(q!==gSeq)return;
+  CTX=c;
   el('who').textContent=CTX.grower.name;
   sel.loc=CTX.locations.length===1?CTX.locations[0].id:sel.loc;
   renderGrower();
@@ -298,9 +307,10 @@ function expandDates(loc){
       if(wds.includes(iso))out.add(ymd(c));
     }
   }
-  return [...out].sort();
+  const T=todayStr();return [...out].sort().filter(d=>d>=T);
 }
 function renderGrower(){
+  const nt=el('note');if(nt)sel.note=nt.value;
   const L=CTX.locations, P=CTX.products, A=CTX.announcements;
   const loc=L.find(l=>l.id===sel.loc);
   const all=expandDates(loc);
@@ -383,7 +393,15 @@ function instCard(){
   return '<div class="card" style="display:flex;gap:10px;align-items:center">'+inner
     +'<button onclick="dismissInst()" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--grey)">✕</button></div>';
 }
-function doInstall(){if(instPrompt){instPrompt.prompt();instPrompt=null;}}
+function doInstall(){
+  if(!instPrompt)return;
+  const p=instPrompt;instPrompt=null;
+  p.prompt();
+  if(p.userChoice)p.userChoice.then(ch=>{
+    if(ch&&ch.outcome==='accepted')dismissInst();
+    else if(A_TOKEN&&ADM)renderAdmin();else if(CTX)renderGrower();
+  }).catch(()=>{});
+}
 function dismissInst(){try{localStorage.setItem('mb-inst','1')}catch(e){}
   if(A_TOKEN&&ADM)renderAdmin();else if(CTX)renderGrower()}
 function pick(k,v){sel.note=el('note')?el('note').value:sel.note;
@@ -412,11 +430,12 @@ async function cancelAnnG(id){
     return;
   }
   pend=null;
+  if(busy)return;busy=true;
   try{await rpc('cancel_announcement',{p_token:G_TOKEN,p_announcement:id});
     toast(t('toast_cancelled'));
     if(sel.editing===id)stopEdit();
     await loadGrower();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 async function submitAnn(){
   el('sub').disabled=true;
@@ -435,9 +454,10 @@ async function submitAnn(){
   }catch(e){const f=el('ferr');f.textContent=e.message;f.style.display='block';el('sub').disabled=false;}
 }
 async function truck(id){
+  if(busy)return;busy=true;
   try{await rpc('raise_truck_alert',{p_token:G_TOKEN,p_announcement:id,p_message:null});
     toast(t('toast_alert'));await loadGrower();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 
 /* ---------- ADMIN (Manon) ---------- */
@@ -451,7 +471,11 @@ function weekDays(off){
 }
 function wkNav(d){pWeek=Math.max(0,pWeek+d);renderAdmin()}
 async function loadAdmin(){
-  try{ADM=await rpc('admin_overview',{p_token:A_TOKEN});}catch(e){return fail(e.message)}
+  const q=++aSeq;let o;
+  try{o=await rpc('admin_overview',{p_token:A_TOKEN});}
+  catch(e){if(!ADM||e.message===t('invalid_token'))return fail(e.message);return renderAdmin()}
+  if(q!==aSeq)return;
+  ADM=o;
   ADM.settings=ADM.settings||{};ADM.routes=ADM.routes||[];
   el('who').textContent=t('admin');el('subT').textContent=t('week_planner');
   document.querySelector('.wrap#app').classList.add('wide');
@@ -459,8 +483,8 @@ async function loadAdmin(){
 }
 function renderAdmin(){
   // preserve in-progress choices across re-renders (auto-refresh, two-tap, toggles)
-  const keep={};document.querySelectorAll('select[id^="rs-"]').forEach(s=>{keep[s.id]=s.value});
-  const ci=el('capin');const capV=ci?ci.value:null;
+  const keep={};document.querySelectorAll('#app select').forEach(s=>{if(s.id)keep[s.id]=s.value});
+  document.querySelectorAll('#app input, #app textarea').forEach(i=>{if(i.id&&i.value!==i.defaultValue)keep[i.id]=i.value});
   const open=ADM.exceptions.filter(e=>!e.resolved_at);
   let h='';
   if(!open.length){
@@ -591,8 +615,9 @@ function renderAdmin(){
   h+='</div>';
   h+=instCard();
   el('app').innerHTML=h;
-  Object.entries(keep).forEach(([id,v])=>{const s=el(id);if(s&&[...s.options].some(o=>o.value===v))s.value=v});
-  if(capV!==null){const c2=el('capin');if(c2)c2.value=capV;}
+  Object.entries(keep).forEach(([id,v])=>{const x=el(id);if(!x)return;
+    if(x.tagName==='SELECT'){if([...x.options].some(o=>o.value===v))x.value=v}
+    else x.value=v});
 }
 function cap(r){return r.capacity||parseInt(ADM.settings.default_truck_capacity||'44',10)}
 function annCard(a,d){
@@ -619,8 +644,8 @@ function annCard(a,d){
   if(acts)h+='<div class="acts">'+acts+'</div>';
   return h+'</div>';
 }
-async function assign(aid,rid){try{await rpc('admin_assign_route',{p_token:A_TOKEN,p_announcement:aid,p_route:rid});await loadAdmin();}catch(e){toast(e.message)}}
-async function clearFlag(aid){try{await rpc('admin_clear_change_flag',{p_token:A_TOKEN,p_announcement:aid});await loadAdmin();}catch(e){toast(e.message)}}
+async function assign(aid,rid){if(busy)return;busy=true;try{await rpc('admin_assign_route',{p_token:A_TOKEN,p_announcement:aid,p_route:rid});await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
+async function clearFlag(aid){if(busy)return;busy=true;try{await rpc('admin_clear_change_flag',{p_token:A_TOKEN,p_announcement:aid});await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
 function routeFormHTML(){
   const r=rForm.id?ADM.routes.find(x=>x.id===rForm.id):null;
   return '<div class="route"><div class="grid2">'
@@ -643,8 +668,9 @@ async function saveRoute(){
   const c=el('rf-carrier').value.trim();
   const cp=parseInt(el('rf-cap').value,10);
   const f=rForm;
+  if(busy)return;busy=true;
   try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:f.id,p_date:f.date,p_name:n,p_carrier:c,p_capacity:cp>0?cp:null});
-    rForm=null;toast(t(f.id?'toast_route_upd':'toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}
+    rForm=null;toast(t(f.id?'toast_route_upd':'toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
 async function delRoute(id){
   if(pend!=='dr:'+id){
@@ -653,18 +679,21 @@ async function delRoute(id){
     return;
   }
   pend=null;
-  try{await rpc('admin_delete_route',{p_token:A_TOKEN,p_route:id});toast(t('toast_route_del'));await loadAdmin();}catch(e){toast(e.message)}
+  if(busy)return;busy=true;
+  try{await rpc('admin_delete_route',{p_token:A_TOKEN,p_route:id});toast(t('toast_route_del'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
 async function setCap(){
   const v=parseInt(el('capin').value,10);
   if(!v||v<1||v>100)return toast(t('bad_cap'));
-  try{await rpc('admin_set_setting',{p_token:A_TOKEN,p_key:'default_truck_capacity',p_value:String(v)});toast(t('toast_cap'));await loadAdmin();}catch(e){toast(e.message)}
+  if(busy)return;busy=true;
+  try{await rpc('admin_set_setting',{p_token:A_TOKEN,p_key:'default_truck_capacity',p_value:String(v)});toast(t('toast_cap'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
 function dset(l){return (ADM.growers.flatMap(g=>g.locations).find(x=>x.id===l)?.pickup_dates||[]).filter(d=>d.active).map(d=>d.date)}
 async function addDate(lid){
   const v=el('nd-'+lid).value;if(!v)return toast(t('pick_date_first'));
   const ds=[...new Set([...dset(lid),v])];
-  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(t('toast_day_add'));await loadAdmin();}catch(e){toast(e.message)}
+  if(busy)return;busy=true;
+  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(t('toast_day_add'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
 async function toggleWD(lid,d){
   const loc=ADM.growers.flatMap(g=>g.locations).find(x=>x.id===lid);
@@ -675,25 +704,28 @@ async function toggleWD(lid,d){
 }
 async function rmDate(lid,d){
   const ds=dset(lid).filter(x=>x!==d);
-  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(t('toast_day_rm'));await loadAdmin();}catch(e){toast(e.message)}
+  if(busy)return;busy=true;
+  try{await rpc('admin_set_pickup_dates',{p_token:A_TOKEN,p_location:lid,p_dates:ds});toast(t('toast_day_rm'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
-async function resolveExc(id){try{await rpc('admin_resolve_exception',{p_token:A_TOKEN,p_exception:id});toast(t('toast_exc'));await loadAdmin();}catch(e){toast(e.message)}}
-async function setSt(id,st){try{await rpc('admin_set_status',{p_token:A_TOKEN,p_announcement:id,p_status:st});await loadAdmin();}catch(e){toast(e.message)}}
+async function resolveExc(id){if(busy)return;busy=true;try{await rpc('admin_resolve_exception',{p_token:A_TOKEN,p_exception:id});toast(t('toast_exc'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
+async function setSt(id,st){if(busy)return;busy=true;try{await rpc('admin_set_status',{p_token:A_TOKEN,p_announcement:id,p_status:st});await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
 function addGrower(){gForm=true;renderAdmin();const i=el('gf-name');if(i)i.focus()}
 async function saveGrower(){
   const n=el('gf-name').value.trim();if(!n)return toast(t('name_req'));
+  if(busy)return;busy=true;
   try{const r=await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:null,p_name:n,p_contact:el('gf-contact').value.trim(),p_phone:el('gf-phone').value.trim()});
     const ln=el('gf-loc').value.trim()||t('p_first_loc_def');
     await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:el('gf-addr').value.trim()});
     gForm=false;toast(t('toast_grower'));await loadAdmin();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 function editGrower(id){gEdit=id;lEdit=null;renderAdmin();const i=el('ge-name');if(i)i.focus()}
 async function saveGrowerEdit(id){
   const g=ADM.growers.find(x=>x.id===id);const n=el('ge-name').value.trim();if(!n)return toast(t('name_req'));
+  if(busy)return;busy=true;
   try{await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:id,p_name:n,p_contact:el('ge-contact').value.trim(),p_phone:el('ge-phone').value.trim(),p_active:g?g.active!==false:true});
     gEdit=null;toast(t('toast_upd'));await loadAdmin();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 function delG(id){
   if(pend!=='dg:'+id){pend='dg:'+id;renderAdmin();
@@ -701,17 +733,19 @@ function delG(id){
   pend=null;doDelG(id);
 }
 async function doDelG(id){
+  if(busy)return;busy=true;
   try{await rpc('admin_delete_grower',{p_token:A_TOKEN,p_id:id});
     toast(t('toast_del'));await loadAdmin();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 function editLoc(id){lEdit=id;gEdit=null;renderAdmin();const i=el('le-name');if(i)i.focus()}
 async function saveLocEdit(id,gid){
   const n=el('le-name').value.trim();if(!n)return toast(t('name_req'));
   const g=ADM.growers.find(x=>x.id===gid);const l=g&&g.locations.find(x=>x.id===id);
+  if(busy)return;busy=true;
   try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:id,p_grower:gid,p_name:n,p_address:el('le-addr').value.trim(),p_active:l?l.active!==false:true});
     lEdit=null;toast(t('toast_upd'));await loadAdmin();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 function delL(id){
   if(pend!=='dl:'+id){pend='dl:'+id;renderAdmin();
@@ -719,16 +753,18 @@ function delL(id){
   pend=null;doDelL(id);
 }
 async function doDelL(id){
+  if(busy)return;busy=true;
   try{await rpc('admin_delete_location',{p_token:A_TOKEN,p_id:id});
     toast(t('toast_del'));await loadAdmin();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 function addLoc(gid){lForm=gid;renderAdmin();const i=el('lf-name');if(i)i.focus()}
 async function saveLoc(gid){
   const n=el('lf-name').value.trim();if(!n)return toast(t('name_req'));
+  if(busy)return;busy=true;
   try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:gid,p_name:n,p_address:el('lf-addr').value.trim()});
     lForm=null;toast(t('toast_loc'));await loadAdmin();
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{busy=false}
 }
 function copyLink(tok){
   const url=location.origin+location.pathname+'?t='+tok;
