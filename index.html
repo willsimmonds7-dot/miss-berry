@@ -101,6 +101,20 @@ try{
   else{const s=JSON.parse(localStorage.getItem('mb-access')||'null');
     if(s){if(s.role==='admin')A_TOKEN=s.token;else G_TOKEN=s.token;}}
 }catch(e){}
+// dynamic manifest: bake the token into start_url so an installed PWA opens the right view
+// (iOS home-screen apps have separate localStorage, so the launch URL must carry the token)
+try{
+  if(G_TOKEN||A_TOKEN){
+    const mq=A_TOKEN?'admin='+encodeURIComponent(A_TOKEN):'t='+encodeURIComponent(G_TOKEN);
+    const mf={name:'Miss Berry Portaal',short_name:'Miss Berry',
+      start_url:location.origin+'/?'+mq,scope:location.origin+'/',display:'standalone',
+      background_color:'#faf7f8',theme_color:'#8e1f4f',
+      icons:[{src:location.origin+'/icon-192.png',sizes:'192x192',type:'image/png'},
+             {src:location.origin+'/icon-512.png',sizes:'512x512',type:'image/png'}]};
+    const ml=document.querySelector('link[rel="manifest"]');
+    if(ml)ml.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(mf));
+  }
+}catch(e){}
 let LANG='nl';try{LANG=localStorage.getItem('mb-lang')||'nl'}catch(e){}
 const I18N={
 nl:{
