@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#8e1f4f">
-<link rel="manifest" href="manifest.webmanifest">
+<!-- no static manifest: injected via JS with token in start_url; iOS falls back to page URL -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Miss Berry">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Miss Berry Portaal</title>
 <style>
@@ -109,19 +113,19 @@ try{
     if(location.search!==q)history.replaceState(null,'',q);
   }
 }catch(e){}
-// dynamic manifest: bake the token into start_url so an installed PWA opens the right view
-// (iOS home-screen apps have separate localStorage, so the launch URL must carry the token)
+// manifest injected at runtime only, with the token baked into start_url — a static
+// manifest would make iOS Add to Home Screen use its tokenless start_url; without one
+// iOS falls back to the page URL (which carries the token via replaceState above)
 try{
-  if(G_TOKEN||A_TOKEN){
-    const mq=A_TOKEN?'admin='+encodeURIComponent(A_TOKEN):'t='+encodeURIComponent(G_TOKEN);
-    const mf={name:'Miss Berry Portaal',short_name:'Miss Berry',
-      start_url:location.origin+'/?'+mq,scope:location.origin+'/',display:'standalone',
-      background_color:'#faf7f8',theme_color:'#8e1f4f',
-      icons:[{src:location.origin+'/icon-192.png',sizes:'192x192',type:'image/png'},
-             {src:location.origin+'/icon-512.png',sizes:'512x512',type:'image/png'}]};
-    const ml=document.querySelector('link[rel="manifest"]');
-    if(ml)ml.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(mf));
-  }
+  const mq=A_TOKEN?'?admin='+encodeURIComponent(A_TOKEN):G_TOKEN?'?t='+encodeURIComponent(G_TOKEN):'';
+  const mf={name:'Miss Berry Portaal',short_name:'Miss Berry',
+    start_url:location.origin+'/'+mq,scope:location.origin+'/',display:'standalone',
+    background_color:'#faf7f8',theme_color:'#8e1f4f',
+    icons:[{src:location.origin+'/icon-192.png',sizes:'192x192',type:'image/png'},
+           {src:location.origin+'/icon-512.png',sizes:'512x512',type:'image/png'}]};
+  const ml=document.createElement('link');ml.rel='manifest';
+  ml.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(mf));
+  document.head.appendChild(ml);
 }catch(e){}
 let LANG='nl';try{LANG=localStorage.getItem('mb-lang')||'nl'}catch(e){}
 const I18N={
