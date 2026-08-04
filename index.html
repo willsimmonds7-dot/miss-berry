@@ -83,6 +83,10 @@ select{border:1.5px solid var(--line);border-radius:10px;padding:8px;font:inheri
 details{border-top:1px solid var(--line);padding:10px 2px}
 details summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
 details summary .muted{margin-left:auto;padding-right:8px}
+.tbtn{background:none;border:0;color:var(--berry);font-size:13px;font-weight:700;cursor:pointer;padding:6px 2px}
+.tbtn.warn{color:var(--bad)}
+.locd{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.locd summary{font-size:14px}
 details summary::after{content:"▾";color:var(--grey)}
 details[open] summary::after{content:"▴"}
 .subbox{background:#faf7f8;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}
@@ -146,16 +150,17 @@ nl:{
   my_ann:'Mijn aanmeldingen', no_ann:'Nog geen aanmeldingen.',
   st_picked:'Opgehaald', st_cancelled:'Geannuleerd', st_announced:'Aangemeld',
   pickup_pre:'ophalen', alert_sent_line:'🚚 Melding verstuurd — Miss Berry is op de hoogte', truck_btn:'🚚 Waar blijft mijn vrachtwagen?',
-  edit_btn:'✏️ Wijzigen', cancel_btn:'Annuleren', footer_g:'Vragen? Bel of app Miss Berry zoals je gewend bent.',
+  edit_btn:'Wijzigen', cancel_btn:'Annuleren', footer_g:'Vragen? Bel of app Miss Berry zoals je gewend bent.',
   confirm_cancel:'Weet je zeker dat je deze aanmelding wilt annuleren?',
   toast_cancelled:'Aanmelding geannuleerd — Miss Berry ziet dit direct.', toast_updated:'✏️ Gewijzigd — Miss Berry ziet dit direct.',
   toast_created:'✅ Aangemeld! Miss Berry plant het transport.', toast_alert:'🚚 Melding verstuurd — Miss Berry zoekt het uit.',
   alerts_h:'🚨 Meldingen', open:'open', no_alerts:'Geen open meldingen. 🎉', resolved_btn:'Opgelost',
   planner_h:'📅 Weekplanner', no_plan:'Nog geen aanmeldingen of routes.', today:'vandaag',
   new_route:'+ Nieuwe route', pool:'📥 Nog niet ingedeeld', past_ann:'Eerdere aanmeldingen',
-  settings_h:'⚙️ Instellingen', save:'Opslaan', cap_hint:'Standaard vrachtwagencapaciteit (pallets). Per route aan te passen.',
-  growers_h:'👩‍🌾 Telers & ophaaldagen', loc_one:'locatie', loc_many:'locaties', portal_link:'Portaallink', copy_link:'📋 Kopieer link voor teler',
-  add_day:'+ Datum toevoegen', fixed_days:'🔁 Vaste ophaaldagen — elke week', fixed_hint:'Klik een dag aan of uit. Wordt direct opgeslagen.', extra_days:'📅 Losse extra datums', extra_hint:'Eenmalige ophaaldagen, naast het vaste weekschema.', no_extra:'Geen losse datums gepland.', upcoming:'Eerstvolgende ophaaldagen:', toast_weekly:'Vaste ophaaldagen bijgewerkt', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
+  settings_h:'⚙️ Instellingen', save:'Opslaan', cap_hint:'Standaard vrachtwagencapaciteit (pallets)',
+  growers_h:'👩‍🌾 Telers & ophaaldagen', loc_one:'locatie', loc_many:'locaties', portal_link:'Portaallink', copy_link:'Kopieer link',
+  add_day:'+ Datum', fixed_days:'Vaste ophaaldagen — elke week', extra_days:'Losse extra datums', no_extra:'Geen losse datums gepland.', upcoming:'Eerstvolgende ophaaldagen:', toast_weekly:'Vaste ophaaldagen bijgewerkt', add_loc:'+ Locatie toevoegen', new_grower:'+ Nieuwe teler',
+  sum_week:'elke ', sum_extra:'extra', sched_none:'nog geen ophaaldagen',
   b_alert:'🚚 melding', b_changed:'✏️ gewijzigd', b_cancelled_by:'geannuleerd door teler',
   picked_btn:'✓ Opgehaald', unassign:'↩︎ uit route', to_route:'→ route', ok_seen:'OK, gezien',
   p_route_name:'Naam route (bv. Route Limburg):', p_route_name2:'Naam route:', p_carrier:'Vervoerder (optioneel):', p_cap:'Capaciteit in pallets:',
@@ -197,7 +202,7 @@ en:{
   my_ann:'My announcements', no_ann:'No announcements yet.',
   st_picked:'Picked up', st_cancelled:'Cancelled', st_announced:'Announced',
   pickup_pre:'pickup', alert_sent_line:'🚚 Alert sent — Miss Berry is aware', truck_btn:'🚚 Where is my truck?',
-  edit_btn:'✏️ Edit', cancel_btn:'Cancel', footer_g:'Questions? Call or message Miss Berry as usual.',
+  edit_btn:'Edit', cancel_btn:'Cancel', footer_g:'Questions? Call or message Miss Berry as usual.',
   confirm_cancel:'Are you sure you want to cancel this announcement?',
   toast_cancelled:'Announcement cancelled — Miss Berry sees this immediately.', toast_updated:'✏️ Updated — Miss Berry sees this immediately.',
   toast_created:'✅ Announced! Miss Berry will plan the transport.', toast_alert:'🚚 Alert sent — Miss Berry is on it.',
@@ -205,8 +210,9 @@ en:{
   planner_h:'📅 Week planner', no_plan:'No announcements or routes yet.', today:'today',
   new_route:'+ New route', pool:'📥 Not yet assigned', past_ann:'Past announcements',
   settings_h:'⚙️ Settings', save:'Save', cap_hint:'Default truck capacity (pallets). Adjustable per route.',
-  growers_h:'👩‍🌾 Growers & pickup days', loc_one:'location', loc_many:'locations', portal_link:'Portal link', copy_link:'📋 Copy link for grower',
-  add_day:'+ Add date', fixed_days:'🔁 Weekly pickup days — every week', fixed_hint:'Click a day on or off. Saved instantly.', extra_days:'📅 One-off extra dates', extra_hint:'Single pickup dates, on top of the weekly schedule.', no_extra:'No one-off dates planned.', upcoming:'Next pickup days:', toast_weekly:'Weekly pickup days updated', add_loc:'+ Add location', new_grower:'+ New grower',
+  growers_h:'👩‍🌾 Growers & pickup days', loc_one:'location', loc_many:'locations', portal_link:'Portal link', copy_link:'Copy link',
+  add_day:'+ Date', fixed_days:'Weekly pickup days — every week', extra_days:'One-off extra dates', no_extra:'No one-off dates planned.', upcoming:'Next pickup days:', toast_weekly:'Weekly pickup days updated', add_loc:'+ Add location', new_grower:'+ New grower',
+  sum_week:'every ', sum_extra:'extra', sched_none:'no pickup days yet',
   b_alert:'🚚 alert', b_changed:'✏️ changed', b_cancelled_by:'cancelled by grower',
   picked_btn:'✓ Picked up', unassign:'↩︎ remove from route', to_route:'→ route', ok_seen:'OK, seen',
   p_route_name:'Route name (e.g. Route Limburg):', p_route_name2:'Route name:', p_carrier:'Carrier (optional):', p_cap:'Capacity in pallets:',
@@ -350,8 +356,8 @@ function renderGrower(){
     return '<div class="row'+(a.status==='cancelled'?' dim':'')+(editing?' editing':'')+'"><div><b>'+plt(a.pallets)+' '+esc(pname(a))+'</b>'+(editing?' <span class="badge b-warn">'+t('editing_b')+'</span>':'')+'<div class="sub2">'+esc(a.location)+' · '+t('pickup_pre')+' '+fmtD(a.pickup_date)+'</div>'
       +(a.truck_alert?'<div class="sub2" style="color:var(--warn);font-weight:600">'+t('alert_sent_line')+'</div>'
         :(late?'<button class="truck" onclick="truck(\''+a.id+'\')">'+t('truck_btn')+'</button>':''))
-      +(a.status==='announced'?'<div class="acts"><button class="btn tiny" onclick="editAnn(\''+a.id+'\')">'+t('edit_btn')+'</button>'
-        +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="cancelAnnG(\''+a.id+'\')">'+(pend==='ca:'+a.id?t('sure_btn'):t('cancel_btn'))+'</button></div>':'')
+      +(a.status==='announced'?'<div class="acts"><button class="tbtn" onclick="editAnn(\''+a.id+'\')">'+t('edit_btn')+'</button>'
+        +'<button class="tbtn warn" onclick="cancelAnnG(\''+a.id+'\')">'+(pend==='ca:'+a.id?t('sure_btn'):t('cancel_btn'))+'</button></div>':'')
       +'</div><span class="badge '+st[1]+'">'+st[0]+'</span></div>';
   };
   const act=A.filter(a=>a.status==='announced'||(a.status==='picked_up'&&a.pickup_date>=T)).sort((x,y)=>x.pickup_date.localeCompare(y.pickup_date)||String(x.created_at||'').localeCompare(String(y.created_at||'')));
@@ -437,7 +443,7 @@ async function truck(id){
 }
 
 /* ---------- ADMIN (Manon) ---------- */
-let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null, gEdit=null, lEdit=null, gOpen={}, pWeek=0;
+let ADM=null, newDates={}, rForm=null, gForm=false, lForm=null, gEdit=null, lEdit=null, gOpen={}, lOpen={}, pWeek=0;
 function weekDays(off){
   const now=new Date(todayStr()+'T12:00:00');
   const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()===0?7:now.getDay())-1)+off*7);
@@ -456,12 +462,15 @@ async function loadAdmin(){
 function renderAdmin(){
   const open=ADM.exceptions.filter(e=>!e.resolved_at);
   let h='';
-  h+='<div class="card"><h2>'+t('alerts_h')+(open.length?' <span class="badge b-bad">'+open.length+' '+t('open')+'</span>':'')+'</h2>';
-  if(!open.length)h+='<div class="muted">'+t('no_alerts')+'</div>';
-  open.forEach(e=>{h+='<div class="row"><div><b>'+t('truck_btn')+'</b><div class="sub2">'+esc(e.grower)+' · '+esc(e.location)+' · '+plt(e.pallets)+' · '+t('pickup_pre')+' '+fmtD(e.pickup_date)+'</div>'
-    +(e.message?'<div class="sub2">“'+esc(e.message)+'”</div>':'')+'</div>'
-    +'<button class="btn tiny" onclick="resolveExc(\''+e.id+'\')">'+t('resolved_btn')+'</button></div>';});
-  h+='</div>';
+  if(!open.length){
+    h+='<div class="muted" style="margin:2px 6px 10px">'+t('no_alerts')+'</div>';
+  }else{
+    h+='<div class="card"><h2>'+t('alerts_h')+' <span class="badge b-bad">'+open.length+' '+t('open')+'</span></h2>';
+    open.forEach(e=>{h+='<div class="row"><div><b>'+t('truck_btn')+'</b><div class="sub2">'+esc(e.grower)+' · '+esc(e.location)+' · '+plt(e.pallets)+' · '+t('pickup_pre')+' '+fmtD(e.pickup_date)+'</div>'
+      +(e.message?'<div class="sub2">“'+esc(e.message)+'”</div>':'')+'</div>'
+      +'<button class="btn tiny" onclick="resolveExc(\''+e.id+'\')">'+t('resolved_btn')+'</button></div>';});
+    h+='</div>';
+  }
 
   const T=todayStr();
   const ann=ADM.announcements.filter(a=>a.status!=='cancelled'||a.change_flag==='cancelled');
@@ -475,7 +484,7 @@ function renderAdmin(){
     const rts=ADM.routes.filter(r=>r.date===d);
     const dun=upc.filter(a=>a.pickup_date===d&&!a.route_id).sort((x,y)=>x.status===y.status?String(x.created_at||'').localeCompare(String(y.created_at||'')):(x.status==='cancelled'?1:-1));
     const has=rts.length||dun.length||(rForm&&!rForm.id&&rForm.date===d);
-    h+='<div class="dayhead"'+(has?'':' style="opacity:.55;margin-bottom:2px"')+'><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" onclick="newRoute(\''+d+'\')">'+t('new_route')+'</button></div>';
+    h+='<div class="dayhead"'+(has?'':' style="opacity:.55;margin-bottom:2px"')+'><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" title="'+t('new_route')+'" onclick="newRoute(\''+d+'\')">'+(has?t('new_route'):'+')+'</button></div>';
     if(!has)return;
     rts.forEach(r=>{
       if(rForm&&rForm.id===r.id){h+=routeFormHTML();return;}
@@ -503,9 +512,9 @@ function renderAdmin(){
 
   h+='<div class="cols">';
   h+='<div class="card"><h2>'+t('settings_h')+'</h2>'
-    +'<div class="grid2"><input id="capin" value="'+esc(ADM.settings.default_truck_capacity||'44')+'" inputmode="numeric">'
-    +'<button class="btn tiny" onclick="setCap()">'+t('save')+'</button></div>'
-    +'<div class="muted" style="margin-top:6px">'+t('cap_hint')+'</div></div>';
+    +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="muted" style="flex:1;min-width:150px">'+t('cap_hint')+'</span>'
+    +'<input id="capin" value="'+esc(ADM.settings.default_truck_capacity||'44')+'" inputmode="numeric" style="width:64px;text-align:center">'
+    +'<button class="btn tiny sub" style="margin:0" onclick="setCap()">'+t('save')+'</button></div></div>';
 
   h+='<div class="card"><h2>'+t('growers_h')+'</h2>';
   ADM.growers.forEach(g=>{
@@ -520,10 +529,9 @@ function renderAdmin(){
         +'<button class="btn tiny sub" onclick="gEdit=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
     }else{
       h+='<div class="muted" style="margin:6px 0">'+esc(g.contact||'')+(g.phone?' · '+esc(g.phone):'')+'</div>';
-      h+='<div class="linkbox">'+t('portal_link')+': '+location.origin+location.pathname+'?t='+g.token+'</div>'
-        +'<div class="acts"><button class="btn tiny sub" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>'
-        +'<button class="btn tiny sub" onclick="editGrower(\''+g.id+'\')">'+t('edit_btn')+'</button>'
-        +'<button class="btn tiny sub" onclick="delG(\''+g.id+'\')">'+(pend==='dg:'+g.id?t('sure_btn'):t('del_btn'))+'</button>'
+      h+='<div class="acts" style="gap:14px"><button class="tbtn" onclick="copyLink(\''+g.token+'\')">'+t('copy_link')+'</button>'
+        +'<button class="tbtn" onclick="editGrower(\''+g.id+'\')">'+t('edit_btn')+'</button>'
+        +'<button class="tbtn warn" onclick="delG(\''+g.id+'\')">'+(pend==='dg:'+g.id?t('sure_btn'):t('del_btn'))+'</button>'
         +'</div>';
     }
     g.locations.forEach(l=>{
@@ -536,23 +544,25 @@ function renderAdmin(){
           +'<button class="btn tiny sub" onclick="lEdit=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
         return;
       }
-      h+='<h3'+(linact?' class="dim"':'')+'>'+esc(l.name)+(linact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+'</h3><div class="muted">'+esc(l.address||'')+'</div>';
-      h+='<div class="acts" style="margin:4px 0 6px"><button class="btn tiny sub" onclick="editLoc(\''+l.id+'\')">'+t('edit_btn')+'</button>'
-        +'<button class="btn tiny sub" onclick="delL(\''+l.id+'\')">'+(pend==='dl:'+l.id?t('sure_btn'):t('del_btn'))+'</button>'
-        +'</div>';
-      if(linact)return;
-      h+='<div class="subbox"><div class="sublbl">'+t('fixed_days')+'</div>'
-        +'<div class="chips wdrow" style="margin-top:6px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((l.weekly_days||[]).includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div>'
-        +'<div class="muted" style="margin-top:6px">'+t('fixed_hint')+'</div></div>';
       const ex=l.pickup_dates.filter(d=>d.active);
+      const wd=l.weekly_days||[];
+      const sum=(wd.length?t('sum_week')+wd.map(wdN).join('+'):'')+(ex.length?(wd.length?' · ':'')+ex.length+' '+t('sum_extra'):'');
+      h+='<details class="locd"'+(lOpen[l.id]?' open':'')+' ontoggle="lOpen[\''+l.id+'\']=this.open"><summary'+(linact?' class="dim"':'')+'>'+esc(l.name)+(linact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+' <span class="muted">'+(linact?'':(sum||t('sched_none')))+'</span></summary>';
+      if(l.address)h+='<div class="muted" style="margin-top:4px">'+esc(l.address)+'</div>';
+      h+='<div class="acts" style="gap:14px;margin:2px 0 4px"><button class="tbtn" onclick="editLoc(\''+l.id+'\')">'+t('edit_btn')+'</button>'
+        +'<button class="tbtn warn" onclick="delL(\''+l.id+'\')">'+(pend==='dl:'+l.id?t('sure_btn'):t('del_btn'))+'</button>'
+        +'</div>';
+      if(linact){h+='</details>';return;}
+      h+='<div class="subbox"><div class="sublbl">'+t('fixed_days')+'</div>'
+        +'<div class="chips wdrow" style="margin-top:6px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+(wd.includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div></div>';
       h+='<div class="subbox"><div class="sublbl">'+t('extra_days')+'</div><div style="margin-top:6px">';
       if(ex.length)ex.forEach(d=>{h+='<span class="dt">'+fmtD(d.date)+'<button onclick="rmDate(\''+l.id+'\',\''+d.date+'\')">✕</button></span>';});
       else h+='<span class="muted">'+t('no_extra')+'</span>';
       h+='</div><div class="grid2" style="margin-top:8px"><input type="date" id="nd-'+l.id+'" min="'+todayStr()+'">'
-        +'<button class="btn tiny" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div>'
-        +'<div class="muted" style="margin-top:6px">'+t('extra_hint')+'</div></div>';
-      const up=expandDates({pickup_dates:ex.map(d=>d.date),weekly_days:l.weekly_days||[]}).filter(x=>x>=todayStr()).slice(0,4);
+        +'<button class="btn tiny sub" style="margin:0" onclick="addDate(\''+l.id+'\')">'+t('add_day')+'</button></div></div>';
+      const up=expandDates({pickup_dates:ex.map(d=>d.date),weekly_days:wd}).filter(x=>x>=todayStr()).slice(0,4);
       if(up.length)h+='<div class="muted" style="margin:8px 0 2px">'+t('upcoming')+' '+up.map(fmtD).join(' · ')+'</div>';
+      h+='</details>';
     });
     if(lForm===g.id){
       h+='<div class="route" style="margin-top:10px"><div class="grid2">'
