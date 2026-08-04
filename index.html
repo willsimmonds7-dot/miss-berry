@@ -178,7 +178,7 @@ nl:{
   toast_copy:'Link gekopieerd — stuur via WhatsApp', p_copy:'Kopieer deze link:',
   link_msg:'Geen toegangslink. Open de persoonlijke link die je van Miss Berry hebt gekregen — of plak hem hieronder.',
   link_ph:'Plak hier je link of code', open_btn:'Openen', link_err:'Geen geldige link of code herkend.',
-  same_again:'Zelfde als vorige keer', today_lbl:'Vandaag', tomorrow:'Morgen', this_pre:'Deze', next_pre:'Volgende',
+  same_again:'Zelfde als vorige keer', today_lbl:'Vandaag', tomorrow:'Morgen',
   succ_h:'Aangemeld!', succ_upd_h:'Wijziging opgeslagen', succ_sub:'Miss Berry plant het transport. Je ziet de status hieronder bij je aanmeldingen.', succ_new:'+ Nieuwe aanmelding',
   f_route_name:'Naam route (bv. Route Limburg)', f_carrier:'Vervoerder (optioneel)', f_cap:'Capaciteit (pallets)',
   f_gname:'Naam teler (bedrijfsnaam)', f_contact:'Contactpersoon (optioneel)', f_phone:'Telefoon (optioneel)',
@@ -229,7 +229,7 @@ en:{
   toast_copy:'Link copied — send via WhatsApp', p_copy:'Copy this link:',
   link_msg:'No access link. Open the personal link you received from Miss Berry — or paste it below.',
   link_ph:'Paste your link or code here', open_btn:'Open', link_err:'No valid link or code recognised.',
-  same_again:'Same as last time', today_lbl:'Today', tomorrow:'Tomorrow', this_pre:'This', next_pre:'Next',
+  same_again:'Same as last time', today_lbl:'Today', tomorrow:'Tomorrow',
   succ_h:'Announced!', succ_upd_h:'Changes saved', succ_sub:'Miss Berry will plan the transport. You can follow the status below in your announcements.', succ_new:'+ New announcement',
   f_route_name:'Route name (e.g. Route Limburg)', f_carrier:'Carrier (optional)', f_cap:'Capacity (pallets)',
   f_gname:'Grower name (company)', f_contact:'Contact person (optional)', f_phone:'Phone (optional)',
@@ -285,17 +285,14 @@ async function loadGrower(){
   renderGrower();
 }
 const WD={nl:['ma','di','wo','do','vr','za','zo'],en:['Mo','Tu','We','Th','Fr','Sa','Su']};
-const WDF={nl:['maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag','zondag'],en:['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']};
 function wdN(d){return (WD[LANG]||WD.nl)[d-1]}
 function fmtFriendly(d){
   const dt=new Date(d+'T12:00:00'), now=new Date(todayStr()+'T12:00:00');
   const diff=Math.round((dt-now)/86400000);
-  const wd=(WDF[LANG]||WDF.nl)[(dt.getDay()===0?7:dt.getDay())-1];
-  const dm=dt.toLocaleDateString(LANG==='en'?'en-GB':'nl-NL',{day:'numeric',month:'short'});
   if(diff===0)return t('today_lbl')+' ('+fmtD(d)+')';
   if(diff===1)return t('tomorrow')+' ('+fmtD(d)+')';
-  if(diff>1&&diff<7)return t('this_pre')+' '+wd+' ('+dm+')';
-  if(diff>=7&&diff<14)return t('next_pre')+' '+wd+' ('+dm+')';
+  if(diff>1&&diff<7)return t('this_week')+' ('+fmtD(d)+')';
+  if(diff>=7&&diff<14)return t('next_week')+' ('+fmtD(d)+')';
   return fmtD(d);
 }
 function ymd(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
