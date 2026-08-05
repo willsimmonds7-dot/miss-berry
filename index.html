@@ -85,6 +85,9 @@ details summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;di
 details summary .muted{margin-left:auto;padding-right:8px}
 .tbtn{background:none;border:0;color:var(--berry);font-size:13px;font-weight:700;cursor:pointer;padding:6px 2px}
 .tbtn.warn{color:var(--bad)}
+.gd{border-bottom:1px solid var(--line);padding:10px 0 12px;margin:0}
+.gd:last-of-type{border-bottom:0}
+.gd>summary{font-size:16px;padding:4px 0}
 .locd{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
 .locd summary{font-size:14px}
 details summary::after{content:"▾";color:var(--grey);font-size:22px;line-height:1;margin-left:8px}
@@ -554,7 +557,7 @@ function renderAdmin(){
   h+='<div class="card"><h2>'+t('growers_h')+'</h2>';
   ADM.growers.forEach(g=>{
     const ginact=g.active===false;
-    h+='<details'+(gOpen[g.id]===false?'':' open')+' ontoggle="gOpen[\''+g.id+'\']=this.open"><summary>'+esc(g.name)+(ginact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
+    h+='<details class="gd"'+(gOpen[g.id]?' open':'')+' ontoggle="gOpen[\''+g.id+'\']=this.open"><summary>'+esc(g.name)+(ginact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
     if(gEdit===g.id){
       h+='<div class="route" style="margin-top:8px"><div class="grid2">'
         +'<input type="text" id="ge-name" value="'+esc(g.name)+'">'
