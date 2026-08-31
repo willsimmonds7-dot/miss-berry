@@ -73,24 +73,27 @@ input[type=text],input[type=date],input[type=tel]{width:100%;border:1.5px solid 
 .fill i{display:block;height:100%;background:var(--berry);border-radius:999px}
 .fill i.over{background:var(--bad)}
 .pool{border:1.5px dashed var(--line);border-radius:12px;padding:12px;margin-top:10px}
-.acard{border:1px solid #efd9bd;border-radius:10px;padding:10px;margin-top:8px;background:#fdf3e6}
-.acard.asg{background:#e8f5ec;border-color:#c9e6d3}
+.acard{border:1px solid #f0dfc4;border-left:4px solid #e8a13c;border-radius:10px;padding:10px;margin-top:8px;background:#fff6e8}
+.acard.asg{background:#eaf6ee;border-color:#cfe6d7;border-left-color:#3f9e63}
 .acard.flag{border-color:var(--warn);background:var(--warn-l)}
 .acard.cflag{border-color:var(--bad);background:var(--bad-l)}
 .acard[draggable=true]{cursor:grab}
 .acard.dragging{opacity:.45}
 .route.dropok,.pool.dropok{outline:2px dashed var(--berry);outline-offset:2px;background:var(--berry-l)}
 .pool.empty{display:none}
-.rcard{background:#eef4fb;border-color:#cbdff2}
-.daybtn{cursor:pointer}
-.daybtn:hover{color:var(--berry);text-decoration:underline}
+.rcard{background:#eef2f7;border-color:#d5dfe9}
+.daybtn{cursor:pointer;display:inline-block;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:15px}
+.daybtn:hover{border-color:var(--berry);color:var(--berry);background:var(--berry-l)}
 .daylanes{display:flex;gap:10px;overflow-x:auto;align-items:flex-start;padding:4px 2px 8px}
 .daylanes .lane{flex:0 0 290px;max-width:290px}
 .daylanes .lane>.route,.daylanes .lane>.pool{margin-top:0}
 .daylanes .grid2{grid-template-columns:1fr}
 .daylanes input,.daylanes select{width:100%;min-width:0;box-sizing:border-box}
 .daylanes .rhead{flex-wrap:wrap}
-.daylanes .pool.empty{display:block}
+.poolrow .pool{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-top:10px}
+.poolrow .pool>b{flex-basis:100%}
+.poolrow .pool .acard{flex:0 0 280px;margin-top:0}
+.poolrow .pool.empty{display:flex}
 .porow{display:flex;align-items:center;gap:6px;margin-top:6px}
 .porow label{font-size:12px;font-weight:600;white-space:nowrap}
 .porow input{flex:1;min-width:0;padding:6px 8px;font-size:13px}
@@ -591,8 +594,8 @@ function renderAdmin(){
     h+='<div class="daylanes">';
     rts.forEach(r=>{h+='<div class="lane">'+routeCard(r,d,upc)+'</div>'});
     if(rForm&&!rForm.id&&rForm.date===d)h+='<div class="lane">'+routeFormHTML()+'</div>';
-    h+='<div class="lane">'+poolHTML(d,dun)+'</div>';
     h+='</div>';
+    h+='<div class="poolrow">'+poolHTML(d,dun)+'</div>';
   }else{
   h+='<div class="dayhead" style="margin-top:4px"><button class="btn tiny sub" '+(pWeek===0?'disabled':'')+' onclick="wkNav(-1)">‹</button>'
     +'<b>'+wkLbl+'</b><button class="btn tiny sub" onclick="wkNav(1)">›</button></div>';
