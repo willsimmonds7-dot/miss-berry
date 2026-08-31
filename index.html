@@ -76,6 +76,18 @@ input[type=text],input[type=date],input[type=tel]{width:100%;border:1.5px solid 
 .acard{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px;background:#fff}
 .acard.flag{border-color:var(--warn);background:var(--warn-l)}
 .acard.cflag{border-color:var(--bad);background:var(--bad-l)}
+.acard[draggable=true]{cursor:grab}
+.acard.dragging{opacity:.45}
+.route.dropok,.pool.dropok{outline:2px dashed var(--berry);outline-offset:2px;background:var(--berry-l)}
+.pool.empty{display:none}
+@media(min-width:1024px){
+  .wrap.wide{max-width:1400px}
+  .weekgrid{display:grid;grid-template-columns:repeat(var(--days,7),minmax(0,1fr));gap:10px;align-items:start}
+  .weekgrid .daycol{min-width:0}
+  .weekgrid .dayhead{margin-top:6px;flex-wrap:wrap}
+  .weekgrid .dayhead h3{font-size:15px}
+  .pool.empty{display:block}
+}
 .acts{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 select{border:1.5px solid var(--line);border-radius:10px;padding:8px;font:inherit;font-size:14px;background:#fff}
 .linkbox{font-size:12px;background:#f6f1f3;border-radius:8px;padding:8px;word-break:break-all;color:var(--grey);margin-top:6px}
@@ -484,7 +496,7 @@ async function truck(id){
 }
 
 /* ---------- ADMIN (Manon) ---------- */
-let ADM=null, rForm=null, gForm=false, lForm=null, gEdit=null, lEdit=null, cForm=null, csForm=null, gOpen={}, lOpen={}, pWeek=0;
+let ADM=null, rForm=null, gForm=false, lForm=null, gEdit=null, lEdit=null, cForm=null, csForm=null, gOpen={}, lOpen={}, pWeek=0, DRAG=null;
 function weekDays(off){
   const now=new Date(todayStr()+'T12:00:00');
   const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()===0?7:now.getDay())-1)+off*7);
@@ -528,12 +540,14 @@ function renderAdmin(){
   h+='<div class="card"><h2>'+t('planner_h')+'</h2>';
   h+='<div class="dayhead" style="margin-top:4px"><button class="btn tiny sub" '+(pWeek===0?'disabled':'')+' onclick="wkNav(-1)">‹</button>'
     +'<b>'+wkLbl+'</b><button class="btn tiny sub" onclick="wkNav(1)">›</button></div>';
+  h+='<div class="weekgrid" style="--days:'+wdays.length+'">';
   wdays.forEach(d=>{
     const rts=ADM.routes.filter(r=>r.date===d);
     const dun=upc.filter(a=>a.pickup_date===d&&!a.route_id).sort((x,y)=>x.status===y.status?String(x.created_at||'').localeCompare(String(y.created_at||'')):(x.status==='cancelled'?1:-1));
     const has=rts.length||dun.length||(rForm&&!rForm.id&&rForm.date===d);
+    h+='<div class="daycol">';
     h+='<div class="dayhead"'+(has?'':' style="opacity:.55;margin-bottom:2px"')+'><h3>'+fmtD(d)+(d===T?' · '+t('today'):'')+'</h3><button class="btn sub tiny" title="'+t('new_route')+'" onclick="newRoute(\''+d+'\')">'+(has?t('new_route'):'+')+'</button></div>';
-    if(!has)return;
+    if(!has){h+='</div>';return;}
     rts.forEach(r=>{
       if(rForm&&rForm.id===r.id){h+=routeFormHTML();return;}
       const on=upc.filter(a=>a.route_id===r.id).sort((x,y)=>String(x.created_at||'').localeCompare(String(y.created_at||'')));
@@ -541,7 +555,7 @@ function renderAdmin(){
       const c=cap(r), pct=Math.min(100,Math.round(tot/c*100));
       const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{const k=pname(a);pm[k]=(pm[k]||0)+a.pallets});
       const prodSum=Object.entries(pm).map(([p,n])=>n+' '+p).join(' · ');
-      h+='<div class="route"><div class="rhead"><b>🚚  '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+(r.cold_store?'→ '+esc(r.cold_store)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
+      h+='<div class="route" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropR(event,\''+r.id+'\',\''+d+'\')"><div class="rhead"><b>🚚  '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+(r.cold_store?'→ '+esc(r.cold_store)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
         +'<div class="fill"><i class="'+(tot>c?'over':'')+'" style="width:'+pct+'%"></i></div>'
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
         +on.map(a=>annCard(a,d)).join('')
@@ -549,9 +563,11 @@ function renderAdmin(){
         +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">'+(pend==='dr:'+r.id?t('sure_btn'):'🗑')+'</button></div></div>';
     });
     if(rForm&&!rForm.id&&rForm.date===d)h+=routeFormHTML();
-    if(dun.length){const dn=dun.filter(a=>a.status!=='cancelled').length;
-      h+='<div class="pool"><b>'+t('pool')+(dn?' ('+dn+')':'')+'</b>'+dun.map(a=>annCard(a,d)).join('')+'</div>';}
+    if(dun.length||rts.length){const dn=dun.filter(a=>a.status!=='cancelled').length;
+      h+='<div class="pool'+(dun.length?'':' empty')+'" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropPool(event,\''+d+'\')"><b>'+t('pool')+(dn?' ('+dn+')':'')+'</b>'+dun.map(a=>annCard(a,d)).join('')+'</div>';}
+    h+='</div>';
   });
+  h+='</div>';
   if(past.length){
     h+='<details style="margin-top:12px"><summary>'+t('past_ann')+' ('+past.length+')</summary>';
     past.forEach(a=>{h+=annCard(a,null)});
@@ -672,7 +688,8 @@ function annCard(a,d){
   const cancelled=a.status==='cancelled';
   const cls=cancelled?' cflag':(a.change_flag==='updated'?' flag':'');
   const st=a.status==='picked_up'?[t('st_picked'),'b-ok']:cancelled?[t('st_cancelled'),'b-bad']:[t('st_announced'),'b-warn'];
-  let h='<div class="acard'+cls+'"><div class="row" style="border:0;padding:0"><div><b>'+esc(a.grower)+'</b>'
+  const drag=(!cancelled&&d)?' draggable="true" ondragstart="dragA(event,\''+a.id+'\',\''+d+'\')" ondragend="dragEnd(event)"':'';
+  let h='<div class="acard'+cls+'"'+drag+'><div class="row" style="border:0;padding:0"><div><b>'+esc(a.grower)+'</b>'
     +(a.open_alert?' <span class="badge b-bad">'+t('b_alert')+'</span>':'')
     +(a.change_flag==='updated'?' <span class="badge b-warn">'+t('b_changed')+'</span>':'')
     +(cancelled?' <span class="badge b-bad">'+t('b_cancelled_by')+'</span>':'')
@@ -693,6 +710,12 @@ function annCard(a,d){
   return h+'</div>';
 }
 async function assign(aid,rid){if(busy)return;busy=true;try{await rpc('admin_assign_route',{p_token:A_TOKEN,p_announcement:aid,p_route:rid});await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
+function dragA(e,id,day){DRAG={id:id,day:day};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='move'}e.currentTarget.classList.add('dragging')}
+function dragEnd(e){DRAG=null;e.currentTarget.classList.remove('dragging');document.querySelectorAll('.dropok').forEach(x=>x.classList.remove('dropok'))}
+function dragOver(e,day){if(!DRAG||DRAG.day!==day)return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('dropok')}
+function dragLeave(e){e.currentTarget.classList.remove('dropok')}
+function dropR(e,rid,day){if(!DRAG||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id===rid)return;assign(id,rid)}
+function dropPool(e,day){if(!DRAG||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id)assign(id,null)}
 async function clearFlag(aid){if(busy)return;busy=true;try{await rpc('admin_clear_change_flag',{p_token:A_TOKEN,p_announcement:aid});await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
 function routeFormHTML(){
   const r=rForm.id?ADM.routes.find(x=>x.id===rForm.id):null;
@@ -920,7 +943,7 @@ function idleRefresh(){
   const ae=document.activeElement;
   if(ae&&['TEXTAREA','INPUT','SELECT'].includes(ae.tagName))return;
   if(G_TOKEN){if(!sel.editing&&!sel.prod&&!sel.date){sel.note=el('note')?el('note').value:sel.note;loadGrower()}}
-  else if(A_TOKEN){if(!rForm&&!gForm&&!lForm&&!gEdit&&!lEdit&&!cForm&&!csForm)loadAdmin()}
+  else if(A_TOKEN){if(!DRAG&&!rForm&&!gForm&&!lForm&&!gEdit&&!lEdit&&!cForm&&!csForm)loadAdmin()}
 }
 setInterval(idleRefresh,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleRefresh()});
