@@ -80,6 +80,9 @@ input[type=text],input[type=date],input[type=tel]{width:100%;border:1.5px solid 
 .acard.dragging{opacity:.45}
 .route.dropok,.pool.dropok{outline:2px dashed var(--berry);outline-offset:2px;background:var(--berry-l)}
 .pool.empty{display:none}
+.porow{display:flex;align-items:center;gap:6px;margin-top:6px}
+.porow label{font-size:12px;font-weight:600;white-space:nowrap}
+.porow input{flex:1;min-width:0;padding:6px 8px;font-size:13px}
 @media(min-width:1024px){
   .wrap.wide{max-width:1400px}
   .weekgrid{display:grid;grid-template-columns:repeat(var(--days,7),minmax(0,1fr));gap:10px;align-items:start}
@@ -216,7 +219,8 @@ nl:{
   templates_h:'🔁 Vaste routes', new_template:'+ Nieuwe vaste route', no_templates:'Nog geen vaste routes. Een vaste route verschijnt elke week automatisch in de planner.',
   f_region:'Regio (optioneel)', every_lbl:'Elke',
   wd1:'maandag', wd2:'dinsdag', wd3:'woensdag', wd4:'donderdag', wd5:'vrijdag', wd6:'zaterdag', wd7:'zondag',
-  toast_tpl:'Vaste route opgeslagen', toast_tpl_del:'Vaste route verwijderd'
+  toast_tpl:'Vaste route opgeslagen', toast_tpl_del:'Vaste route verwijderd',
+  toast_po:'PO opgeslagen', po_ph:'PO-nummer…'
 },
 en:{
   invalid_token:'This link is no longer valid. Please contact Miss Berry.',
@@ -277,7 +281,8 @@ en:{
   templates_h:'🔁 Standing routes', new_template:'+ New standing route', no_templates:'No standing routes yet. A standing route automatically appears in the planner every week.',
   f_region:'Region (optional)', every_lbl:'Every',
   wd1:'Monday', wd2:'Tuesday', wd3:'Wednesday', wd4:'Thursday', wd5:'Friday', wd6:'Saturday', wd7:'Sunday',
-  toast_tpl:'Standing route saved', toast_tpl_del:'Standing route deleted'
+  toast_tpl:'Standing route saved', toast_tpl_del:'Standing route deleted',
+  toast_po:'PO saved', po_ph:'PO number…'
 }};
 function t(k){const v=(I18N[LANG]&&I18N[LANG][k])||I18N.nl[k]||k;
   return typeof v==='string'?v.replace(/^(\S{1,8}) (?=\S)/,function(m,e){return /[A-Za-z0-9+]/.test(e)?m:e+'  '}):v}
@@ -566,9 +571,11 @@ function renderAdmin(){
       const c=cap(r), pct=Math.min(100,Math.round(tot/c*100));
       const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{const k=pname(a);pm[k]=(pm[k]||0)+a.pallets});
       const prodSum=Object.entries(pm).map(([p,n])=>n+' '+p).join(' · ');
+      let poRows='';{const pids={};on.filter(a=>a.status!=='cancelled'&&a.product_id).forEach(a=>{pids[a.product_id]=pname(a)});Object.keys(pids).forEach(pid=>{const ex=(r.pos||[]).find(p=>p.product_id===pid);const sg=!ex&&r.cold_store_id?(ADM.po_suggestions||[]).find(x=>x.cold_store_id===r.cold_store_id&&x.product_id===pid):null;poRows+='<div class="porow"><label>PO '+esc(pids[pid])+'</label><input class="po-in" value="'+esc(ex?ex.po:'')+'" placeholder="'+(sg?esc(sg.po):t('po_ph'))+'" onchange="setPO(\''+r.id+'\',\''+pid+'\',this.value)">'+(sg?'<button class="btn tiny sub" onclick="usePO(\''+r.id+'\',\''+pid+'\')">↳ '+esc(sg.po)+'</button>':'')+'</div>'})}
       h+='<div class="route" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropR(event,\''+r.id+'\',\''+d+'\')"><div class="rhead"><b>'+(r.template_id?'🔁':'🚚')+'  '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+(r.region?esc(r.region)+' · ':'')+(r.cold_store?'→ '+esc(r.cold_store)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
         +'<div class="fill"><i class="'+(tot>c?'over':'')+'" style="width:'+pct+'%"></i></div>'
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
+        +poRows
         +on.map(a=>annCard(a,d)).join('')
         +'<div class="acts"><button class="btn tiny sub" onclick="editRoute(\''+r.id+'\')">✏️</button>'
         +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">'+(pend==='dr:'+r.id?t('sure_btn'):'🗑')+'</button></div></div>';
@@ -734,6 +741,8 @@ function annCard(a,d){
   return h+'</div>';
 }
 async function assign(aid,rid){if(busy)return;busy=true;try{await rpc('admin_assign_route',{p_token:A_TOKEN,p_announcement:aid,p_route:rid});await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
+async function setPO(rid,pid,v){if(busy)return;busy=true;try{await rpc('admin_set_route_po',{p_token:A_TOKEN,p_route:rid,p_product:pid,p_po:v&&v.trim()?v.trim():null});toast(t('toast_po'));await loadAdmin()}catch(e){toast(e.message)}finally{busy=false}}
+function usePO(rid,pid){const r=ADM.routes.find(x=>x.id===rid);if(!r||!r.cold_store_id)return;const s=(ADM.po_suggestions||[]).find(x=>x.cold_store_id===r.cold_store_id&&x.product_id===pid);if(s)setPO(rid,pid,s.po)}
 function dragA(e,id,day){DRAG={id:id,day:day};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='move'}e.currentTarget.classList.add('dragging')}
 function dragEnd(e){DRAG=null;e.currentTarget.classList.remove('dragging');document.querySelectorAll('.dropok').forEach(x=>x.classList.remove('dropok'))}
 function dragOver(e,day){if(!DRAG||DRAG.day!==day)return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('dropok')}
