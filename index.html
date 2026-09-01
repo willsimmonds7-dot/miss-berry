@@ -92,6 +92,8 @@ input[type=text],input[type=date],input[type=tel]{width:100%;border:1.5px solid 
 .pchip i{font-style:normal;font-weight:700;color:var(--berry);margin-left:3px;font-size:11px}
 .pchip.dragging{opacity:.5}
 .daycol.dropok,.daywrap.dropok{outline:2px dashed var(--berry);outline-offset:2px;border-radius:10px}
+.slotchip{display:inline-flex;align-items:center;gap:5px;background:#f4f4f1;border:1.5px dashed #c6c6bf;border-radius:999px;padding:3px 5px 3px 10px;font-size:13px;color:#6b6b66;margin:8px 6px 0 0}
+.slotchip .slotx{border:0;background:none;cursor:pointer;color:#999;font-size:15px;line-height:1;padding:0 3px}
 @media(min-width:1024px){.palette{display:flex}}
 .daylanes{display:flex;gap:10px;overflow-x:auto;align-items:flex-start;padding:4px 2px 8px}
 .daylanes .lane{flex:0 0 290px;max-width:290px}
@@ -247,8 +249,10 @@ nl:{
   f_csname:'Naam koelhuis', f_csaddr:'Adres (optioneel)', f_coldstore:'Koelhuis (losadres, optioneel)',
   toast_cs:'Koelhuis opgeslagen', toast_cs_del:'Koelhuis verwijderd',
   crops_lbl:'Teelten', containers_lbl:'Fusttypes', toast_crops:'Teelten bijgewerkt', toast_containers:'Fusttypes bijgewerkt',
-  pal_hint:'Sleep een vervoerder (nieuwe route) of teler (aanmelddag) op een dag', days_lbl:'Aanmelddagen',
+  pal_hint:'Sleep een vervoerder (nieuwe route) of teler op een dag (aanmelddag) of op een route (inplannen)', days_lbl:'Aanmelddagen',
   toast_days:'Aanmelddagen bijgewerkt', allowed_note:'Aanmelden kan op:',
+  slot_added:'Teler ingepland op route', slot_del:'Inplanning verwijderd', slot_dup:'Teler staat al op deze route',
+  planned_h:'📅 Ophaalroute gepland', planned_note:'Miss Berry heeft een ophaalroute voor je ingepland. Heb je aanbod? Meld het aan!',
   invalid_weekday:'Aanmelden kan niet op deze dag. Vraag Miss Berry naar jouw aanmelddagen.',
   templates_h:'🔁 Vaste routes', new_template:'+ Nieuwe vaste route', no_templates:'Nog geen vaste routes. Een vaste route verschijnt elke week automatisch in de planner.',
   f_region:'Regio (optioneel)', every_lbl:'Elke',
@@ -317,8 +321,10 @@ en:{
   f_csname:'Cold store name', f_csaddr:'Address (optional)', f_coldstore:'Cold store (drop-off, optional)',
   toast_cs:'Cold store saved', toast_cs_del:'Cold store deleted',
   crops_lbl:'Crops', containers_lbl:'Container types', toast_crops:'Crops updated', toast_containers:'Container types updated',
-  pal_hint:'Drag a carrier (new route) or grower (announce day) onto a day', days_lbl:'Announce days',
+  pal_hint:'Drag a carrier (new route) or grower onto a day (announce day) or onto a route (plan pickup)', days_lbl:'Announce days',
   toast_days:'Announce days updated', allowed_note:'You can announce on:',
+  slot_added:'Grower planned on route', slot_del:'Planned grower removed', slot_dup:'Grower is already on this route',
+  planned_h:'📅 Pickup route planned', planned_note:'Miss Berry planned a pickup route for you. Got produce? Announce it!',
   invalid_weekday:'You cannot announce for this day. Ask Miss Berry about your announce days.',
   templates_h:'🔁 Standing routes', new_template:'+ New standing route', no_templates:'No standing routes yet. A standing route automatically appears in the planner every week.',
   f_region:'Region (optional)', every_lbl:'Every',
@@ -425,6 +431,12 @@ function renderGrower(){
   }else if(!L.length){
   h+='<div class="card"><h2>'+t('announce_h')+'</h2><div class="muted">'+t('no_loc')+'</div></div>';
   }else{
+  if((CTX.planned_routes||[]).length&&!sel.editing){
+    h+='<div class="card" style="background:#fff6e8;border:1.5px solid #f0dfc4"><b>'+t('planned_h')+'</b>'
+      +'<div class="sub2" style="margin-top:4px">'+t('planned_note')+'</div><div class="chips" style="margin-top:8px">'
+      +CTX.planned_routes.map(pr=>'<button class="chip" onclick="pick(\'date\',\''+pr.date+'\')">📅 '+fmtFriendly(pr.date)+' · '+esc(pr.carrier||pr.name)+'</button>').join('')
+      +'</div></div>';
+  }
   h+='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
   const last=sel.editing?null:[...A].filter(a=>a.status!=='cancelled').sort((x,y)=>String(y.created_at||'').localeCompare(String(x.created_at||'')))[0];
   if(last&&L.find(l=>l.id===last.location_id)&&P.find(p=>p.id===last.product_id)){
@@ -652,6 +664,7 @@ function renderAdmin(){
         +'<div class="fill"><i class="'+(tot>c?'over':'')+'" style="width:'+pct+'%"></i></div>'
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
         +poRows
+        +(r.slots||[]).map(s=>'<span class="slotchip">⏳ '+esc(s.grower)+'<button class="slotx" title="×" onclick="delSlot(\''+s.id+'\')">×</button></span>').join('')
         +on.map(a=>annCard(a,d)).join('')
         +'<div class="acts"><button class="btn tiny sub" onclick="editRoute(\''+r.id+'\')">✏️</button>'
         +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">'+(pend==='dr:'+r.id?t('sure_btn'):'🗑')+'</button></div></div>';
@@ -843,14 +856,18 @@ function dragA(e,id,day){DRAG={t:'a',id:id,day:day};if(e.dataTransfer){e.dataTra
 function dragC(e,id){DRAG={t:'c',id:id};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='copy'}e.currentTarget.classList.add('dragging')}
 function dragG(e,id){DRAG={t:'g',id:id};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='copy'}e.currentTarget.classList.add('dragging')}
 function dragEnd(e){DRAG=null;e.currentTarget.classList.remove('dragging');document.querySelectorAll('.dropok').forEach(x=>x.classList.remove('dropok'))}
-function dragOver(e,day){if(!DRAG||DRAG.t!=='a'||DRAG.day!==day)return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('dropok')}
+function dragOver(e,day){if(!DRAG)return;if(DRAG.t==='a'){if(DRAG.day!==day)return}else if(DRAG.t!=='g')return;e.preventDefault();if(e.stopPropagation)e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=DRAG.t==='a'?'move':'copy';e.currentTarget.classList.add('dropok')}
 function dragLeave(e){e.currentTarget.classList.remove('dropok')}
-function dropR(e,rid,day){if(!DRAG||DRAG.t!=='a'||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id===rid)return;assign(id,rid)}
+function dropR(e,rid,day){if(!DRAG)return;if(DRAG.t==='g'){e.preventDefault();if(e.stopPropagation)e.stopPropagation();e.currentTarget.classList.remove('dropok');const gid=DRAG.id;DRAG=null;slotDrop(rid,gid);return}if(DRAG.t!=='a'||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id===rid)return;assign(id,rid)}
 function dropPool(e,day){if(!DRAG||DRAG.t!=='a'||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id)assign(id,null)}
 function dayOver(e,day){if(!DRAG||DRAG.t==='a')return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';e.currentTarget.classList.add('dropok')}
 function dropDay(e,day){if(!DRAG||DRAG.t==='a')return;e.preventDefault();e.currentTarget.classList.remove('dropok');const g=DRAG;DRAG=null;if(g.t==='c')carDrop(g.id,day);else gDrop(g.id,day)}
 async function carDrop(cid,d){const c=(ADM.carriers||[]).find(x=>x.id===cid);if(!c||busy)return;busy=true;
   try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:null,p_date:d,p_name:c.name,p_carrier_id:c.id,p_capacity:c.capacity||null,p_cold_store_id:null,p_region:null});toast(t('toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
+async function slotDrop(rid,gid){if(busy)return;const r=(ADM.routes||[]).find(x=>x.id===rid);const g=(ADM.growers||[]).find(x=>x.id===gid);if(!r||!g)return;
+  if((r.slots||[]).some(s=>s.grower_id===gid)){toast(t('slot_dup'));return}
+  busy=true;try{await rpc('admin_add_route_slot',{p_token:A_TOKEN,p_route:rid,p_grower:gid});toast(t('slot_added'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
+async function delSlot(sid){if(busy)return;busy=true;try{await rpc('admin_delete_route_slot',{p_token:A_TOKEN,p_slot:sid});toast(t('slot_del'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
 async function gDrop(gid,d){const g=ADM.growers.find(x=>x.id===gid);if(!g)return;const wd=isoDow(d);const cur=g.days||[];
   if(cur.includes(wd)){toast(g.name+' → '+wdN(wd));return}
   const ds=[...cur,wd].sort((a,b)=>a-b);g.days=ds;renderAdmin();
