@@ -98,7 +98,8 @@ input[type=text],input[type=date],input[type=tel]{width:100%;border:1.5px solid 
 .daylanes .lane>.route,.daylanes .lane>.pool{margin-top:0}
 .daylanes .grid2{grid-template-columns:1fr}
 .daylanes input,.daylanes select{width:100%;min-width:0;box-sizing:border-box}
-.daylanes .rhead{flex-wrap:wrap}
+.daylanes .rhead{display:block}
+.daylanes .rhead .muted{display:block;margin-top:2px}
 .poolrow .pool{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-top:10px}
 .poolrow .pool>b{flex-basis:100%}
 .poolrow .pool .acard{flex:0 0 280px;margin-top:0}
@@ -647,7 +648,7 @@ function renderAdmin(){
       const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{const k=pname(a);pm[k]=(pm[k]||0)+a.pallets});
       const prodSum=Object.entries(pm).map(([p,n])=>n+' '+p).join(' · ');
       let poRows='';{const pids={};on.filter(a=>a.status!=='cancelled'&&a.product_id).forEach(a=>{pids[a.product_id]=pname(a)});Object.keys(pids).forEach(pid=>{const ex=(r.pos||[]).find(p=>p.product_id===pid);const sg=!ex&&r.cold_store_id?(ADM.po_suggestions||[]).find(x=>x.cold_store_id===r.cold_store_id&&x.product_id===pid):null;poRows+='<div class="porow"><label>PO '+esc(pids[pid])+'</label><input class="po-in" value="'+esc(ex?ex.po:'')+'" placeholder="'+(sg?esc(sg.po):t('po_ph'))+'" onchange="setPO(\''+r.id+'\',\''+pid+'\',this.value)">'+(sg?'<button class="btn tiny sub" onclick="usePO(\''+r.id+'\',\''+pid+'\')">↳ '+esc(sg.po)+'</button>':'')+'</div>'})}
-      h+='<div class="route rcard" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropR(event,\''+r.id+'\',\''+d+'\')"><div class="rhead"><b>'+(r.template_id?'🔁':'🚚')+'  '+esc(r.name)+'</b><span class="muted">'+(r.carrier?esc(r.carrier)+' · ':'')+(r.region?esc(r.region)+' · ':'')+(r.cold_store?'→ '+esc(r.cold_store)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
+      h+='<div class="route rcard" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropR(event,\''+r.id+'\',\''+d+'\')"><div class="rhead"><b>'+(r.template_id?'🔁':'🚚')+'  '+esc(r.name)+'</b><span class="muted">'+(r.carrier&&r.carrier!==r.name?esc(r.carrier)+' · ':'')+(r.region?esc(r.region)+' · ':'')+(r.cold_store?'→ '+esc(r.cold_store)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
         +'<div class="fill"><i class="'+(tot>c?'over':'')+'" style="width:'+pct+'%"></i></div>'
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
         +poRows
