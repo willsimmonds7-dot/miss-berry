@@ -87,6 +87,7 @@ input[type=text],input[type=date],input[type=tel]{width:100%;border:1.5px solid 
 .daybtn.tdy{border-color:var(--berry);color:var(--berry);background:var(--berry-l)}
 .palette{display:none;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
 .palette .palhint{flex-basis:100%;font-size:13px}
+.palette .palrow{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .pchip{border:1.5px solid #d5dfe9;background:#eef2f7;border-radius:999px;padding:5px 11px;font-size:13px;cursor:grab;user-select:none}
 .pchip.gp{background:#fff6e8;border-color:#f0dfc4}
 .pchip i{font-style:normal;font-weight:700;color:var(--berry);margin-left:3px;font-size:11px}
@@ -619,9 +620,8 @@ function renderAdmin(){
   const wkLbl=pWeek===0?t('this_week'):pWeek===1?t('next_week'):fmtD(wdays[0])+' – '+fmtD(wdays[wdays.length-1]);
   h+='<div class="card"><h2>'+t('planner_h')+'</h2>';
   h+='<div class="palette"><div class="palhint muted">'+t('pal_hint')+'</div>'
-    +(ADM.carriers||[]).map(c=>'<span class="pchip" draggable="true" ondragstart="dragC(event,\''+c.id+'\')" ondragend="dragEnd(event)">🚚 '+esc(c.name)+'</span>').join('')
-    +(ADM.growers||[]).filter(g=>g.active).map(g=>'<span class="pchip gp" draggable="true" ondragstart="dragG(event,\''+g.id+'\')" ondragend="dragEnd(event)">'+esc(g.name)+((g.days||[]).length?'<i>'+g.days.map(wdN).join(' ')+'</i>':'')+'</span>').join('')
-    +'</div>';
+    +'<div class="palrow">'+(ADM.carriers||[]).map(c=>'<span class="pchip" draggable="true" ondragstart="dragC(event,\''+c.id+'\')" ondragend="dragEnd(event)">🚚 '+esc(c.name)+'</span>').join('')+'</div>'
+    +'<div class="palrow">'+(ADM.growers||[]).filter(g=>g.active).map(g=>'<span class="pchip gp" draggable="true" ondragstart="dragG(event,\''+g.id+'\')" ondragend="dragEnd(event)">'+esc(g.name)+((g.days||[]).length?'<i>'+g.days.map(wdN).join(' ')+'</i>':'')+'</span>').join('')+'</div>';
   if(dayView){
     const d=dayView, rts=ADM.routes.filter(r=>r.date===d), dun=dayUnassigned(d,upc);
     h+='<div class="dayhead" style="margin-top:4px"><button class="btn tiny sub" onclick="closeDay()">‹ '+t('back_week')+'</button>'
