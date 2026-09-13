@@ -264,7 +264,10 @@ nl:{
   bc_h:'📤 BC-export', bc_none:'Geen ingedeelde aanmeldingen op deze dag.', bc_no_po:'PO ontbreekt',
   bc_copy:'📋 Kopieer', bc_csv:'⬇️ CSV', bc_copied:'Gekopieerd naar klembord',
   bch_date:'Datum', bch_grower:'Teler', bch_loc:'Locatie', bch_prod:'Teelt', bch_qty:'Aantal',
-  bch_cont:'Fust', bch_po:'PO', bch_cs:'Koelhuis', bch_route:'Route'
+  bch_cont:'Fust', bch_po:'PO', bch_cs:'Koelhuis', bch_route:'Route', bch_unload:'Losdatum',
+  f_date:'Ophaaldatum', f_unload:'Losdatum (optioneel)',
+  copy_route:'Kopieer naar volgende week', toast_route_copy:'Route gekopieerd naar volgende week',
+  pool_hint:'Aanmeldingen zonder route — sleep een kaart hierheen om hem uit een route te halen'
 },
 en:{
   invalid_token:'This link is no longer valid. Please contact Miss Berry.',
@@ -336,7 +339,10 @@ en:{
   bc_h:'📤 BC export', bc_none:'No assigned announcements on this day.', bc_no_po:'PO missing',
   bc_copy:'📋 Copy', bc_csv:'⬇️ CSV', bc_copied:'Copied to clipboard',
   bch_date:'Date', bch_grower:'Grower', bch_loc:'Location', bch_prod:'Crop', bch_qty:'Qty',
-  bch_cont:'Container', bch_po:'PO', bch_cs:'Cold store', bch_route:'Route'
+  bch_cont:'Container', bch_po:'PO', bch_cs:'Cold store', bch_route:'Route', bch_unload:'Unload date',
+  f_date:'Pickup date', f_unload:'Unload date (optional)',
+  copy_route:'Copy to next week', toast_route_copy:'Route copied to next week',
+  pool_hint:'Announcements without a route — drag a card here to take it out of a route'
 }};
 function t(k){const v=(I18N[LANG]&&I18N[LANG][k])||I18N.nl[k]||k;
   return typeof v==='string'?v.replace(/^(\S{1,8}) (?=\S)/,function(m,e){return /[A-Za-z0-9+]/.test(e)?m:e+'  '}):v}
@@ -413,10 +419,14 @@ function expandDates(loc){
 }
 function renderGrower(){
   const nt=el('note');if(nt)sel.note=nt.value;
-  const L=CTX.locations, P=CTX.products, A=CTX.announcements, CT=CTX.containers||[];
+  const L=CTX.locations, A=CTX.announcements;
+  const loc=L.find(l=>l.id===sel.loc);
+  const P=(loc&&loc.products&&loc.products.length?loc.products:CTX.products)||[];
+  const CT=(loc&&loc.containers&&loc.containers.length?loc.containers:CTX.containers)||[];
+  if(sel.prod&&!P.find(p=>p.id===sel.prod))sel.prod=null;
+  if(sel.cont&&!CT.includes(sel.cont))sel.cont=null;
   if(P.length===1)sel.prod=P[0].id;
   if(CT.length===1)sel.cont=CT[0];
-  const loc=L.find(l=>l.id===sel.loc);
   const all=expandDates(loc).filter(gDayOK);
   let dates=all.slice(0,2);
   if(sel.date&&all.includes(sel.date)&&!dates.includes(sel.date))dates=[...dates,sel.date];
@@ -435,7 +445,7 @@ function renderGrower(){
   if((CTX.planned_routes||[]).length&&!sel.editing){
     h+='<div class="card" style="background:#fff6e8;border:1.5px solid #f0dfc4"><b>'+t('planned_h')+'</b>'
       +'<div class="sub2" style="margin-top:4px">'+t('planned_note')+'</div><div class="chips" style="margin-top:8px">'
-      +CTX.planned_routes.map(pr=>'<button class="chip" onclick="pick(\'date\',\''+pr.date+'\')">📅 '+fmtFriendly(pr.date)+' · '+esc(pr.carrier||pr.name)+'</button>').join('')
+      +CTX.planned_routes.map(pr=>'<button class="chip" onclick="pick(\'date\',\''+pr.date+'\')">📅 '+fmtFriendly(pr.date)+' · '+esc(pr.carrier||pr.name)+(pr.location&&CTX.locations.length>1?' · '+esc(pr.location):'')+'</button>').join('')
       +'</div></div>';
   }
   h+='<div class="card"><h2>'+(sel.editing?t('edit_h'):t('announce_h'))+'</h2>';
@@ -621,7 +631,13 @@ function renderAdmin(){
   h+='<div class="card"><h2>'+t('planner_h')+'</h2>';
   h+='<div class="palette"><div class="palhint muted">'+t('pal_hint')+'</div>'
     +'<div class="palrow">'+(ADM.carriers||[]).map(c=>'<span class="pchip" draggable="true" ondragstart="dragC(event,\''+c.id+'\')" ondragend="dragEnd(event)">🚚 '+esc(c.name)+'</span>').join('')+'</div>'
-    +'<div class="palrow">'+(ADM.growers||[]).filter(g=>g.active).map(g=>'<span class="pchip gp" draggable="true" ondragstart="dragG(event,\''+g.id+'\')" ondragend="dragEnd(event)">'+esc(g.name)+((g.days||[]).length?'<i>'+g.days.map(wdN).join(' ')+'</i>':'')+'</span>').join('')+'</div></div>';
+    +'<div class="palrow">'+(ADM.growers||[]).filter(g=>g.active).flatMap(g=>{
+      const ls=(g.locations||[]).filter(l=>l.active!==false);
+      const ds=(g.days||[]).length?'<i>'+g.days.map(wdN).join(' ')+'</i>':'';
+      const chip=(lid,lbl)=>'<span class="pchip gp" draggable="true" ondragstart="dragG(event,\''+g.id+'\',\''+(lid||'')+'\')" ondragend="dragEnd(event)">'+lbl+ds+'</span>';
+      if(ls.length>1)return ls.map(l=>chip(l.id,esc(g.name)+' · '+esc(l.name)));
+      return [chip(ls.length?ls[0].id:'',esc(g.name))];
+    }).join('')+'</div></div>';
   if(dayView){
     const d=dayView, rts=ADM.routes.filter(r=>r.date===d), dun=dayUnassigned(d,upc);
     h+='<div class="dayhead" style="margin-top:4px"><button class="btn tiny sub" onclick="closeDay()">‹ '+t('back_week')+'</button>'
@@ -660,18 +676,19 @@ function renderAdmin(){
       const pm={};on.filter(a=>a.status!=='cancelled').forEach(a=>{const k=pname(a);pm[k]=(pm[k]||0)+a.pallets});
       const prodSum=Object.entries(pm).map(([p,n])=>n+' '+p).join(' · ');
       let poRows='';{const pids={};on.filter(a=>a.status!=='cancelled'&&a.product_id).forEach(a=>{pids[a.product_id]=pname(a)});Object.keys(pids).forEach(pid=>{const ex=(r.pos||[]).find(p=>p.product_id===pid);const sg=!ex&&r.cold_store_id?(ADM.po_suggestions||[]).find(x=>x.cold_store_id===r.cold_store_id&&x.product_id===pid):null;poRows+='<div class="porow"><label>PO '+esc(pids[pid])+'</label><input class="po-in" value="'+esc(ex?ex.po:'')+'" placeholder="'+(sg?esc(sg.po):t('po_ph'))+'" onchange="setPO(\''+r.id+'\',\''+pid+'\',this.value)">'+(sg?'<button class="btn tiny sub" onclick="usePO(\''+r.id+'\',\''+pid+'\')">↳ '+esc(sg.po)+'</button>':'')+'</div>'})}
-      h+='<div class="route rcard" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropR(event,\''+r.id+'\',\''+d+'\')"><div class="rhead"><b>'+(r.template_id?'🔁':'🚚')+'  '+esc(r.name)+'</b><span class="muted">'+(r.carrier&&r.carrier!==r.name?esc(r.carrier)+' · ':'')+(r.region?esc(r.region)+' · ':'')+(r.cold_store?'→ '+esc(r.cold_store)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
+      h+='<div class="route rcard" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropR(event,\''+r.id+'\',\''+d+'\')"><div class="rhead"><b>'+(r.template_id?'🔁':'🚚')+'  '+esc(r.name)+'</b><span class="muted">'+(r.carrier&&r.carrier!==r.name?esc(r.carrier)+' · ':'')+(r.region?esc(r.region)+' · ':'')+(r.cold_store?'→ '+esc(r.cold_store)+' · ':'')+(r.unload_date&&r.unload_date!==r.date?'⤓ '+fmtD(r.unload_date)+' · ':'')+tot+' / '+c+' '+t('pallets')+'</span></div>'
         +'<div class="fill"><i class="'+(tot>c?'over':'')+'" style="width:'+pct+'%"></i></div>'
         +(prodSum?'<div class="sub2" style="margin-top:6px">'+esc(prodSum)+'</div>':'')
         +poRows
-        +(r.slots||[]).map(s=>'<span class="slotchip">⏳ '+esc(s.grower)+'<button class="slotx" title="×" onclick="delSlot(\''+s.id+'\')">×</button></span>').join('')
+        +(r.slots||[]).map(s=>'<span class="slotchip">⏳ '+esc(s.grower)+(s.location&&slotLocMulti(s)?' · '+esc(s.location):'')+'<button class="slotx" title="×" onclick="delSlot(\''+s.id+'\')">×</button></span>').join('')
         +on.map(a=>annCard(a,d)).join('')
         +'<div class="acts"><button class="btn tiny sub" onclick="editRoute(\''+r.id+'\')">✏️</button>'
+        +'<button class="btn tiny sub" title="'+t('copy_route')+'" onclick="copyRoute(\''+r.id+'\')">⧉</button>'
         +'<button class="btn tiny" style="background:#fff;color:var(--bad);border:1.5px solid var(--bad)" onclick="delRoute(\''+r.id+'\')">'+(pend==='dr:'+r.id?t('sure_btn'):'🗑')+'</button></div></div>';
       return h;
   }
   function poolHTML(d,dun){const dn=dun.filter(a=>a.status!=='cancelled').length;
-    return '<div class="pool'+(dun.length?'':' empty')+'" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropPool(event,\''+d+'\')"><b>'+t('pool')+(dn?' ('+dn+')':'')+'</b>'+dun.map(a=>annCard(a,d)).join('')+'</div>';
+    return '<div class="pool'+(dun.length?'':' empty')+'" ondragover="dragOver(event,\''+d+'\')" ondragleave="dragLeave(event)" ondrop="dropPool(event,\''+d+'\')"><b>'+t('pool')+(dn?' ('+dn+')':'')+'</b><div class="sub2 poolhint">'+t('pool_hint')+'</div>'+dun.map(a=>annCard(a,d)).join('')+'</div>';
   }
   function dayUnassigned(d,upc){return upc.filter(a=>a.pickup_date===d&&!a.route_id).sort((x,y)=>x.status===y.status?String(x.created_at||'').localeCompare(String(y.created_at||'')):(x.status==='cancelled'?1:-1))}
   if(past.length){
@@ -689,8 +706,8 @@ function renderAdmin(){
       +'<button class="btn tiny sub" onclick="bcCopy()">'+t('bc_copy')+'</button><button class="btn tiny sub" onclick="bcCSV()">'+t('bc_csv')+'</button></div>';
     const nmiss=ls.filter(l=>!l.po).length;
     if(nmiss)h+='<div class="sub2" style="color:var(--warn);margin-top:6px">⚠️ '+nmiss+' × '+t('bc_no_po')+'</div>';
-    h+='<div style="overflow-x:auto"><table class="bctab"><tr>'+['bch_grower','bch_loc','bch_prod','bch_qty','bch_cont','bch_po','bch_cs','bch_route'].map(k=>'<th>'+t(k)+'</th>').join('')+'</tr>';
-    ls.forEach(l=>{h+='<tr><td>'+esc(l.grower)+'</td><td>'+esc(l.loc)+'</td><td>'+esc(l.prod)+'</td><td>'+l.qty+'</td><td>'+esc(l.cont)+'</td>'+(l.po?'<td>'+esc(l.po)+'</td>':'<td class="nopo">⚠ '+t('bc_no_po')+'</td>')+'<td>'+esc(l.cs)+'</td><td>'+esc(l.route)+'</td></tr>'});
+    h+='<div style="overflow-x:auto"><table class="bctab"><tr>'+['bch_grower','bch_loc','bch_prod','bch_qty','bch_cont','bch_po','bch_cs','bch_route','bch_unload'].map(k=>'<th>'+t(k)+'</th>').join('')+'</tr>';
+    ls.forEach(l=>{h+='<tr><td>'+esc(l.grower)+'</td><td>'+esc(l.loc)+'</td><td>'+esc(l.prod)+'</td><td>'+l.qty+'</td><td>'+esc(l.cont)+'</td>'+(l.po?'<td>'+esc(l.po)+'</td>':'<td class="nopo">⚠ '+t('bc_no_po')+'</td>')+'<td>'+esc(l.cs)+'</td><td>'+esc(l.route)+'</td><td>'+(l.unload?esc(fmtD(l.unload)):'')+'</td></tr>'});
     h+='</table></div>';}}
   h+='</div>';
 
@@ -737,7 +754,7 @@ function renderAdmin(){
   h+='<div class="card"><h2>'+t('growers_h')+'</h2>';
   ADM.growers.forEach(g=>{
     const ginact=g.active===false;
-    h+='<details class="gd"'+(gOpen[g.id]?' open':'')+' ontoggle="gOpen[\''+g.id+'\']=this.open"><summary>'+esc(g.name)+(ginact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
+    h+='<details class="gd" id="gd-'+g.id+'"'+(gOpen[g.id]?' open':'')+' ontoggle="gOpen[\''+g.id+'\']=this.open"><summary>'+esc(g.name)+(ginact?' <span class="badge b-warn">'+t('inactive_lbl')+'</span>':'')+' <span class="muted">'+g.locations.length+' '+(g.locations.length===1?t('loc_one'):t('loc_many'))+'</span></summary>';
     if(gEdit===g.id){
       h+='<div class="route" style="margin-top:8px"><div class="grid2">'
         +'<input type="text" id="ge-name" value="'+esc(g.name)+'">'
@@ -752,10 +769,6 @@ function renderAdmin(){
         +'<button class="tbtn warn" onclick="delG(\''+g.id+'\')">'+(pend==='dg:'+g.id?t('sure_btn'):t('del_btn'))+'</button>'
         +'</div>';
     }
-    h+='<div class="subbox"><div class="sublbl">'+t('crops_lbl')+'</div><div class="chips" style="margin-top:6px">'
-      +(ADM.products||[]).map(p=>'<button class="chip'+((g.products||[]).includes(p.id)?' sel':'')+'" onclick="toggleGP(\''+g.id+'\',\''+p.id+'\')">'+esc(LANG==='en'?p.name_en:p.name_nl)+'</button>').join('')+'</div></div>';
-    h+='<div class="subbox"><div class="sublbl">'+t('containers_lbl')+'</div><div class="chips" style="margin-top:6px">'
-      +CTYPES.map(c=>'<button class="chip'+((g.containers||[]).includes(c)?' sel':'')+'" onclick="toggleGC(\''+g.id+'\',\''+c+'\')">'+ctName(c)+'</button>').join('')+'</div></div>';
     h+='<div class="subbox"><div class="sublbl">'+t('days_lbl')+'</div><div class="chips wdrow" style="margin-top:6px">'
       +[1,2,3,4,5,6,7].map(d=>'<button class="chip'+((g.days||[]).includes(d)?' sel':'')+'" onclick="toggleGD(\''+g.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div></div>';
     g.locations.forEach(l=>{
@@ -777,6 +790,10 @@ function renderAdmin(){
         +'<button class="tbtn warn" onclick="delL(\''+l.id+'\')">'+(pend==='dl:'+l.id?t('sure_btn'):t('del_btn'))+'</button>'
         +'</div>';
       if(linact){h+='</details>';return;}
+      h+='<div class="subbox"><div class="sublbl">'+t('crops_lbl')+'</div><div class="chips" style="margin-top:6px">'
+        +(ADM.products||[]).map(p=>'<button class="chip'+((l.products||[]).includes(p.id)?' sel':'')+'" onclick="toggleLP(\''+l.id+'\',\''+p.id+'\')">'+esc(LANG==='en'?p.name_en:p.name_nl)+'</button>').join('')+'</div></div>';
+      h+='<div class="subbox"><div class="sublbl">'+t('containers_lbl')+'</div><div class="chips" style="margin-top:6px">'
+        +CTYPES.map(c=>'<button class="chip'+((l.containers||[]).includes(c)?' sel':'')+'" onclick="toggleLC(\''+l.id+'\',\''+c+'\')">'+ctName(c)+'</button>').join('')+'</div></div>';
       h+='<div class="subbox"><div class="sublbl">'+t('fixed_days')+'</div>'
         +'<div class="chips wdrow" style="margin-top:6px">'+[1,2,3,4,5,6,7].map(d=>'<button class="chip'+(wd.includes(d)?' sel':'')+'" id="wd-'+l.id+'-'+d+'" onclick="toggleWD(\''+l.id+'\','+d+')">'+wdN(d)+'</button>').join('')+'</div></div>';
       h+='<div class="subbox"><div class="sublbl">'+t('extra_days')+'</div><div style="margin-top:6px">';
@@ -818,6 +835,7 @@ function renderAdmin(){
     else x.value=v});
 }
 function cap(r){if(r.capacity)return r.capacity;const c=(ADM.carriers||[]).find(x=>x.id===r.carrier_id);return (c&&c.capacity)||44}
+function slotLocMulti(s){const g=(ADM.growers||[]).find(x=>x.id===s.grower_id);return g&&(g.locations||[]).filter(l=>l.active!==false).length>1}
 function annCard(a,d){
   const cancelled=a.status==='cancelled';
   const cls=(a.route_id?' asg':'')+(cancelled?' cflag':(a.change_flag==='updated'?' flag':''));
@@ -848,25 +866,25 @@ async function setPO(rid,pid,v){if(busy)return;busy=true;try{await rpc('admin_se
 function usePO(rid,pid){const r=ADM.routes.find(x=>x.id===rid);if(!r||!r.cold_store_id)return;const s=(ADM.po_suggestions||[]).find(x=>x.cold_store_id===r.cold_store_id&&x.product_id===pid);if(s)setPO(rid,pid,s.po)}
 function bcDays(){const s=new Set();(ADM.announcements||[]).forEach(a=>{if(a.route_id&&a.status!=='cancelled')s.add(a.pickup_date)});return [...s].sort()}
 function bcSel(){const ds=bcDays(),T=todayStr();return (bcDay&&ds.includes(bcDay))?bcDay:(ds.includes(T)?T:ds[0])}
-function bcLines(d){return (ADM.announcements||[]).filter(a=>a.pickup_date===d&&a.route_id&&a.status!=='cancelled').map(a=>{const r=ADM.routes.find(x=>x.id===a.route_id);const po=r?(r.pos||[]).find(p=>p.product_id===a.product_id):null;return {date:d,grower:a.grower,loc:a.location,prod:pname(a),qty:a.pallets,cont:a.container_type?ctName(a.container_type):'',po:po?po.po:'',cs:(r&&r.cold_store)||'',route:r?r.name:''}}).sort((x,y)=>x.grower.localeCompare(y.grower)||x.prod.localeCompare(y.prod))}
-function bcRows(d){return [[t('bch_date'),t('bch_grower'),t('bch_loc'),t('bch_prod'),t('bch_qty'),t('bch_cont'),t('bch_po'),t('bch_cs'),t('bch_route')]].concat(bcLines(d).map(l=>[l.date,l.grower,l.loc,l.prod,String(l.qty),l.cont,l.po,l.cs,l.route]))}
+function bcLines(d){return (ADM.announcements||[]).filter(a=>a.pickup_date===d&&a.route_id&&a.status!=='cancelled').map(a=>{const r=ADM.routes.find(x=>x.id===a.route_id);const po=r?(r.pos||[]).find(p=>p.product_id===a.product_id):null;return {date:d,grower:a.grower,loc:a.location,prod:pname(a),qty:a.pallets,cont:a.container_type?ctName(a.container_type):'',po:po?po.po:'',cs:(r&&r.cold_store)||'',route:r?r.name:'',unload:(r&&r.unload_date)||''}}).sort((x,y)=>x.grower.localeCompare(y.grower)||x.prod.localeCompare(y.prod))}
+function bcRows(d){return [[t('bch_date'),t('bch_grower'),t('bch_loc'),t('bch_prod'),t('bch_qty'),t('bch_cont'),t('bch_po'),t('bch_cs'),t('bch_route'),t('bch_unload')]].concat(bcLines(d).map(l=>[l.date,l.grower,l.loc,l.prod,String(l.qty),l.cont,l.po,l.cs,l.route,l.unload]))}
 function bcCSV(){const d=bcSel();const csv='\uFEFF'+bcRows(d).map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');const b=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='bc-export-'+d+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href)}
 function bcCopy(){const txt=bcRows(bcSel()).map(r=>r.join('\t')).join('\n');navigator.clipboard.writeText(txt).then(()=>toast(t('bc_copied'))).catch(e=>toast(e.message))}
 function dragA(e,id,day){DRAG={t:'a',id:id,day:day};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='move'}e.currentTarget.classList.add('dragging')}
 function dragC(e,id){DRAG={t:'c',id:id};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='copy'}e.currentTarget.classList.add('dragging')}
-function dragG(e,id){DRAG={t:'g',id:id};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='copy'}e.currentTarget.classList.add('dragging')}
+function dragG(e,id,lid){DRAG={t:'g',id:id,lid:lid||null};if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='copy'}e.currentTarget.classList.add('dragging')}
 function dragEnd(e){DRAG=null;e.currentTarget.classList.remove('dragging');document.querySelectorAll('.dropok').forEach(x=>x.classList.remove('dropok'))}
 function dragOver(e,day){if(!DRAG)return;if(DRAG.t==='a'){if(DRAG.day!==day)return}else if(DRAG.t!=='g')return;e.preventDefault();if(e.stopPropagation)e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=DRAG.t==='a'?'move':'copy';e.currentTarget.classList.add('dropok')}
 function dragLeave(e){e.currentTarget.classList.remove('dropok')}
-function dropR(e,rid,day){if(!DRAG)return;if(DRAG.t==='g'){e.preventDefault();if(e.stopPropagation)e.stopPropagation();e.currentTarget.classList.remove('dropok');const gid=DRAG.id;DRAG=null;slotDrop(rid,gid);return}if(DRAG.t!=='a'||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id===rid)return;assign(id,rid)}
+function dropR(e,rid,day){if(!DRAG)return;if(DRAG.t==='g'){e.preventDefault();if(e.stopPropagation)e.stopPropagation();e.currentTarget.classList.remove('dropok');const gid=DRAG.id,lid=DRAG.lid||null;DRAG=null;slotDrop(rid,gid,lid);return}if(DRAG.t!=='a'||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id===rid)return;assign(id,rid)}
 function dropPool(e,day){if(!DRAG||DRAG.t!=='a'||DRAG.day!==day)return;e.preventDefault();e.currentTarget.classList.remove('dropok');const id=DRAG.id;DRAG=null;const a=ADM.announcements.find(x=>x.id===id);if(a&&a.route_id)assign(id,null)}
 function dayOver(e,day){if(!DRAG||DRAG.t==='a')return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';e.currentTarget.classList.add('dropok')}
 function dropDay(e,day){if(!DRAG||DRAG.t==='a')return;e.preventDefault();e.currentTarget.classList.remove('dropok');const g=DRAG;DRAG=null;if(g.t==='c')carDrop(g.id,day);else gDrop(g.id,day)}
 async function carDrop(cid,d){const c=(ADM.carriers||[]).find(x=>x.id===cid);if(!c||busy)return;busy=true;
   try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:null,p_date:d,p_name:c.name,p_carrier_id:c.id,p_capacity:c.capacity||null,p_cold_store_id:null,p_region:null});toast(t('toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
-async function slotDrop(rid,gid){if(busy)return;const r=(ADM.routes||[]).find(x=>x.id===rid);const g=(ADM.growers||[]).find(x=>x.id===gid);if(!r||!g)return;
-  if((r.slots||[]).some(s=>s.grower_id===gid)){toast(t('slot_dup'));return}
-  busy=true;try{await rpc('admin_add_route_slot',{p_token:A_TOKEN,p_route:rid,p_grower:gid});toast(t('slot_added'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
+async function slotDrop(rid,gid,lid){if(busy)return;const r=(ADM.routes||[]).find(x=>x.id===rid);const g=(ADM.growers||[]).find(x=>x.id===gid);if(!r||!g)return;
+  if((r.slots||[]).some(s=>s.grower_id===gid&&(s.location_id||null)===(lid||null))){toast(t('slot_dup'));return}
+  busy=true;try{await rpc('admin_add_route_slot',{p_token:A_TOKEN,p_route:rid,p_grower:gid,p_location:lid||null});toast(t('slot_added'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
 async function delSlot(sid){if(busy)return;busy=true;try{await rpc('admin_delete_route_slot',{p_token:A_TOKEN,p_slot:sid});toast(t('slot_del'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}}
 async function gDrop(gid,d){const g=ADM.growers.find(x=>x.id===gid);if(!g)return;const wd=isoDow(d);const cur=g.days||[];
   if(cur.includes(wd)){toast(g.name+' → '+wdN(wd));return}
@@ -887,13 +905,15 @@ function routeFormHTML(){
     +'<select id="rf-cs"><option value="">'+t('f_coldstore')+'</option>'
     +(ADM.cold_stores||[]).map(s=>'<option value="'+s.id+'"'+(r&&r.cold_store_id===s.id?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div>'
     +'<div style="margin-top:8px"><input type="text" id="rf-region" placeholder="'+t('f_region')+'" value="'+esc(r&&r.region?r.region:'')+'"></div>'
+    +'<div class="grid2" style="margin-top:8px"><div><div class="sublbl">'+t('f_date')+'</div><input type="date" id="rf-date" value="'+esc(r?r.date:rForm.date)+'"></div>'
+    +'<div><div class="sublbl">'+t('f_unload')+'</div><input type="date" id="rf-unload" value="'+esc(r&&r.unload_date?r.unload_date:'')+'"></div></div>'
     +'<div class="acts"><button class="btn tiny" onclick="saveRoute()">'+t('save')+'</button>'
     +'<button class="btn tiny sub" onclick="rForm=null;renderAdmin()">'+t('cancel_btn')+'</button></div></div>';
 }
 function rfDefCap(r){const c=(ADM.carriers||[]).find(x=>x.id===(r&&r.carrier_id));return c&&c.capacity?String(c.capacity):''}
 function carSel(){const st=el('rf-carrier');const c=(ADM.carriers||[]).find(x=>x.id===st.value);const i=el('rf-cap');if(i)i.value=c&&c.capacity!=null?String(c.capacity):''}
 function rDirty(){if(!rForm)return false;
-  for(const id of ['rf-name','rf-cap','rf-region']){const i=el(id);if(i&&i.value!==i.defaultValue)return true}
+  for(const id of ['rf-name','rf-cap','rf-region','rf-date','rf-unload']){const i=el(id);if(i&&i.value!==i.defaultValue)return true}
   for(const sid of ['rf-carrier','rf-cs']){const st=el(sid);
     if(st){const d=[...st.options].find(o=>o.defaultSelected);if((d?d.value:'')!==st.value)return true}}
   return false}
@@ -909,9 +929,12 @@ async function saveRoute(){
   const cp=parseInt(el('rf-cap').value,10);
   const f=rForm;
   if(busy)return;busy=true;
-  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:f.id,p_date:f.date,p_name:n,p_carrier_id:c,p_capacity:cp>0?cp:null,p_cold_store_id:el('rf-cs')&&el('rf-cs').value?el('rf-cs').value:null,p_region:el('rf-region')&&el('rf-region').value.trim()?el('rf-region').value.trim():null});
+  const dt=el('rf-date')&&el('rf-date').value?el('rf-date').value:f.date;
+  try{await rpc('admin_upsert_route',{p_token:A_TOKEN,p_route:f.id,p_date:dt,p_name:n,p_carrier_id:c,p_capacity:cp>0?cp:null,p_cold_store_id:el('rf-cs')&&el('rf-cs').value?el('rf-cs').value:null,p_region:el('rf-region')&&el('rf-region').value.trim()?el('rf-region').value.trim():null,p_unload_date:el('rf-unload')&&el('rf-unload').value?el('rf-unload').value:null});
     rForm=null;toast(t(f.id?'toast_route_upd':'toast_route_new'));await loadAdmin();}catch(e){toast(e.message)}finally{busy=false}
 }
+async function copyRoute(id){if(busy)return;busy=true;
+  try{await rpc('admin_copy_route',{p_token:A_TOKEN,p_route:id});toast(t('toast_route_copy'));await loadAdmin()}catch(e){toast(e.message)}finally{busy=false}}
 async function delRoute(id){
   if(pend!=='dr:'+id){
     pend='dr:'+id;renderAdmin();
@@ -1022,6 +1045,20 @@ async function toggleGC(gid,c){
   g.containers=ds;renderAdmin();
   try{await rpc('admin_set_grower_containers',{p_token:A_TOKEN,p_grower:gid,p_types:ds});toast(t('toast_containers'));}catch(e){toast(e.message);await loadAdmin();}
 }
+async function toggleLP(lid,pid){
+  const loc=ADM.growers.flatMap(g=>g.locations).find(x=>x.id===lid);if(!loc)return;
+  const cur=loc.products||[];
+  const ds=cur.includes(pid)?cur.filter(x=>x!==pid):[...cur,pid];
+  loc.products=ds;renderAdmin();
+  try{await rpc('admin_set_location_products',{p_token:A_TOKEN,p_location:lid,p_products:ds});toast(t('toast_crops'));}catch(e){toast(e.message);await loadAdmin();}
+}
+async function toggleLC(lid,c){
+  const loc=ADM.growers.flatMap(g=>g.locations).find(x=>x.id===lid);if(!loc)return;
+  const cur=loc.containers||[];
+  const ds=cur.includes(c)?cur.filter(x=>x!==c):[...cur,c];
+  loc.containers=ds;renderAdmin();
+  try{await rpc('admin_set_location_containers',{p_token:A_TOKEN,p_location:lid,p_containers:ds});toast(t('toast_containers'));}catch(e){toast(e.message);await loadAdmin();}
+}
 function dset(l){return (ADM.growers.flatMap(g=>g.locations).find(x=>x.id===l)?.pickup_dates||[]).filter(d=>d.active).map(d=>d.date)}
 async function addDate(lid){
   const v=el('nd-'+lid).value;if(!v)return toast(t('pick_date_first'));
@@ -1050,7 +1087,8 @@ async function saveGrower(){
   try{const r=await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:null,p_name:n,p_contact:el('gf-contact').value.trim(),p_phone:el('gf-phone').value.trim()});
     const ln=el('gf-loc').value.trim()||t('p_first_loc_def');
     await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:el('gf-addr').value.trim()});
-    gForm=false;toast(t('toast_grower'));await loadAdmin();
+    gForm=false;gOpen[r.id]=true;toast(t('toast_grower'));await loadAdmin();
+    const dd=el('gd-'+r.id);if(dd)dd.scrollIntoView({block:'center'});
   }catch(e){toast(e.message)}finally{busy=false}
 }
 function editGrower(id){gEdit=id;lEdit=null;renderAdmin();const i=el('ge-name');if(i)i.focus()}
