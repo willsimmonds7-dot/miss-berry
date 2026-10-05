@@ -137,10 +137,12 @@ details summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;di
 details summary .muted{margin-left:auto;padding-right:8px}
 .tbtn{background:none;border:0;color:var(--berry);font-size:13px;font-weight:700;cursor:pointer;padding:6px 2px}
 .tbtn.warn{color:var(--bad)}
-.gd{border-bottom:1px solid var(--line);padding:10px 0 12px;margin:0}
-.gd:last-of-type{border-bottom:0}
-.gd>summary{font-size:16px;padding:4px 0}
-.locd{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.gd{border:1px solid var(--line);border-radius:12px;margin-top:10px;padding:0 14px 0;background:#fff}
+.gd>summary{font-size:16px;padding:12px 14px;margin:0 -14px;border-radius:12px}
+.gd[open]{border-color:var(--berry);padding-bottom:14px;box-shadow:0 1px 6px rgba(142,31,79,.08)}
+.gd[open]>summary{background:var(--berry-l);color:var(--berry-d);border-radius:11px 11px 0 0;border-bottom:1px solid var(--line);margin-bottom:6px}
+.locd{margin-top:10px;border-left:3px solid var(--line);border-top:0;padding:2px 0 2px 12px}
+.locd[open]{border-left-color:var(--berry)}
 .locd summary{font-size:14px}
 details summary::after{content:"▾";color:var(--grey);font-size:22px;line-height:1;margin-left:8px}
 details[open] summary::after{content:"▴"}
@@ -816,7 +818,7 @@ function renderAdmin(){
     }
   });
   if(gForm){
-    h+='<div class="route" style="margin-top:12px">'
+    h+='<div class="route" style="margin-top:18px">'
       +'<div class="grid2"><input type="text" id="gf-name" placeholder="'+t('f_gname')+'">'
       +'<input type="text" id="gf-contact" placeholder="'+t('f_contact')+'"></div>'
       +'<div class="grid2" style="margin-top:8px"><input type="tel" id="gf-phone" placeholder="'+t('f_phone')+'">'
@@ -825,7 +827,7 @@ function renderAdmin(){
       +'<div class="acts"><button class="btn tiny" onclick="saveGrower()">'+t('save')+'</button>'
       +'<button class="btn tiny sub" onclick="gForm=false;renderAdmin()">'+t('cancel_btn')+'</button></div></div></div>';
   }else{
-    h+='<div style="margin-top:12px"><button class="btn sub" onclick="addGrower()">'+t('new_grower')+'</button></div></div>';
+    h+='<div style="margin-top:18px"><button class="btn sub" onclick="addGrower()">'+t('new_grower')+'</button></div></div>';
   }
   h+='</div>';
   h+=instCard();
