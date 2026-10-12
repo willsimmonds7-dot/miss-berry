@@ -239,7 +239,7 @@ nl:{
   succ_h:'Aangemeld!', succ_upd_h:'Wijziging opgeslagen', succ_sub:'Miss Berry plant het transport. Je ziet de status hieronder bij je aanmeldingen.', succ_new:'+ Nieuwe aanmelding',
   f_route_name:'Naam route (bv. Route Limburg)', f_carrier:'Vervoerder (optioneel)', f_cap:'Capaciteit (pallets)',
   f_gname:'Naam teler (bedrijfsnaam)', f_contact:'Contactpersoon (optioneel)', f_phone:'Telefoon (optioneel)',
-  f_lname:'Naam locatie', f_addr:'Adres (optioneel)', name_req:'Naam is verplicht',
+  f_lname:'Naam locatie', f_addr:'Adres', addr_required:'Adres is verplicht', name_req:'Naam is verplicht',
   del_btn:'Verwijderen', inactive_lbl:'inactief', toast_upd:'Opgeslagen ✓', toast_del:'Verwijderd ✓',
   pallet_one:'pallet', missing_pre:'Kies nog:', sure_btn:'Zeker weten?', st_planned:'Ingepland ✓',
   this_week:'Deze week', next_week:'Volgende week',
@@ -314,7 +314,7 @@ en:{
   succ_h:'Announced!', succ_upd_h:'Changes saved', succ_sub:'Miss Berry will plan the transport. You can follow the status below in your announcements.', succ_new:'+ New announcement',
   f_route_name:'Route name (e.g. Route Limburg)', f_carrier:'Carrier (optional)', f_cap:'Capacity (pallets)',
   f_gname:'Grower name (company)', f_contact:'Contact person (optional)', f_phone:'Phone (optional)',
-  f_lname:'Location name', f_addr:'Address (optional)', name_req:'Name is required',
+  f_lname:'Location name', f_addr:'Address', addr_required:'Address is required', name_req:'Name is required',
   del_btn:'Delete', inactive_lbl:'inactive', toast_upd:'Saved ✓', toast_del:'Deleted ✓',
   pallet_one:'pallet', missing_pre:'Still to choose:', sure_btn:'Are you sure?', st_planned:'Scheduled ✓',
   this_week:'This week', next_week:'Next week',
@@ -1085,10 +1085,11 @@ async function setSt(id,st){if(busy)return;busy=true;try{await rpc('admin_set_st
 function addGrower(){gForm=true;renderAdmin();const i=el('gf-name');if(i)i.focus()}
 async function saveGrower(){
   const n=el('gf-name').value.trim();if(!n)return toast(t('name_req'));
+  const adr=el('gf-addr').value.trim();if(!adr)return toast(t('addr_required'));
   if(busy)return;busy=true;
   try{const r=await rpc('admin_upsert_grower',{p_token:A_TOKEN,p_id:null,p_name:n,p_contact:el('gf-contact').value.trim(),p_phone:el('gf-phone').value.trim()});
     const ln=el('gf-loc').value.trim()||t('p_first_loc_def');
-    await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:el('gf-addr').value.trim()});
+    await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:r.id,p_name:ln,p_address:adr});
     gForm=false;gOpen[r.id]=true;toast(t('toast_grower'));await loadAdmin();
     const dd=el('gd-'+r.id);if(dd)dd.scrollIntoView({block:'center'});
   }catch(e){toast(e.message)}finally{busy=false}
@@ -1115,9 +1116,10 @@ async function doDelG(id){
 function editLoc(id){lEdit=id;gEdit=null;renderAdmin();const i=el('le-name');if(i)i.focus()}
 async function saveLocEdit(id,gid){
   const n=el('le-name').value.trim();if(!n)return toast(t('name_req'));
+  const adr=el('le-addr').value.trim();if(!adr)return toast(t('addr_required'));
   const g=ADM.growers.find(x=>x.id===gid);const l=g&&g.locations.find(x=>x.id===id);
   if(busy)return;busy=true;
-  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:id,p_grower:gid,p_name:n,p_address:el('le-addr').value.trim(),p_active:l?l.active!==false:true});
+  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:id,p_grower:gid,p_name:n,p_address:adr,p_active:l?l.active!==false:true});
     lEdit=null;toast(t('toast_upd'));await loadAdmin();
   }catch(e){toast(e.message)}finally{busy=false}
 }
@@ -1135,8 +1137,9 @@ async function doDelL(id){
 function addLoc(gid){lForm=gid;renderAdmin();const i=el('lf-name');if(i)i.focus()}
 async function saveLoc(gid){
   const n=el('lf-name').value.trim();if(!n)return toast(t('name_req'));
+  const adr=el('lf-addr').value.trim();if(!adr)return toast(t('addr_required'));
   if(busy)return;busy=true;
-  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:gid,p_name:n,p_address:el('lf-addr').value.trim()});
+  try{await rpc('admin_upsert_location',{p_token:A_TOKEN,p_id:null,p_grower:gid,p_name:n,p_address:adr});
     lForm=null;toast(t('toast_loc'));await loadAdmin();
   }catch(e){toast(e.message)}finally{busy=false}
 }
